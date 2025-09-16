@@ -4,7 +4,7 @@ from dvc.exceptions import InvalidArgumentError, UploadError
 from dvc.log import logger
 from dvc.stage.cache import RunCacheNotSupported
 from dvc.ui import ui
-
+from dvc.repo.logs import add_push_entry
 from . import locked
 
 logger = logger.getChild(__name__)
@@ -174,5 +174,17 @@ def push(  # noqa: PLR0913
     failed_count += push_failed
     if failed_count:
         raise UploadError(failed_count)
+    
+    # -----  new hook -------#
+
+    try:
+        ws_idx=indexes.get("workspace")
+        if ws_idx is not None:
+            outs=ws_idx.outs
+            add_push_entry(self,outs)
+    except Exception as e:
+        logger.warning(f"Failed to record push logs: {e}")
+
+    return transferred_count
 
     return transferred_count
