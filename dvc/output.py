@@ -554,6 +554,12 @@ class Output:
             odb = self.cache
         else:
             odb = self.local_cache
+
+        # Cache hash computations during repro to avoid redundant tree builds
+        cache_key = (self.fs_path, self.hash_name, self.fs.protocol)
+        if self.repo is not None and cache_key in self.repo._hash_cache:
+            return self.repo._hash_cache[cache_key]
+
         _, meta, obj = self._build(
             odb,
             self.fs_path,
@@ -562,6 +568,10 @@ class Output:
             ignore=self.dvcignore,
             dry_run=not self.use_cache,
         )
+
+        if self.repo is not None:
+            self.repo._hash_cache[cache_key] = (meta, obj.hash_info)
+
         return meta, obj.hash_info
 
     def get_meta(self) -> Meta:
@@ -703,6 +713,18 @@ class Output:
             self.verify_metric()
 
         self.update_legacy_hash_name()
+
+        # For dependencies, reuse cached hash if available
+        cache_key = (self.fs_path, self.hash_name, self.fs.protocol)
+        if (
+            self.IS_DEPENDENCY
+            and self.repo is not None
+            and cache_key in self.repo._hash_cache
+        ):
+            self.meta, self.hash_info = self.repo._hash_cache[cache_key]
+            self.files = None
+            return
+
         if self.use_cache:
             _, self.meta, self.obj = self._build(
                 self.cache,
@@ -724,6 +746,10 @@ class Output:
                 logger.debug("Output '%s' doesn't use cache. Skipping saving.", self)
 
         self.hash_info = self.obj.hash_info
+
+        if self.repo is not None:
+            self.repo._hash_cache[cache_key] = (self.meta, self.hash_info)
+
         self.files = None
 
     def update_legacy_hash_name(self, force: bool = False):
