@@ -214,7 +214,7 @@ def test_read_params_py(tmp_dir, dvc):
 
 
 def test_params_py_tuple_status(tmp_dir, dvc):
-    """https://github.com/iterative/dvc/issues/8803"""
+    """https://github.com/treeverse/dvc/issues/8803"""
     parameters_file = "parameters.py"
     tmp_dir.gen(parameters_file, "TUPLE = (10, 100)\n")
     dep = ParamsDependency(Stage(dvc), parameters_file, ["TUPLE"])

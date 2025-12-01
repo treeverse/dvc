@@ -167,16 +167,16 @@ def test_system_info():
 @pytest.mark.parametrize(
     "git_remote",
     [
-        "git://github.com/iterative/dvc.git",
-        "git@github.com:iterative/dvc.git",
-        "http://github.com/iterative/dvc.git",
-        "https://github.com/iterative/dvc.git",
-        "ssh://git@github.com/iterative/dvc.git",
+        "git://github.com/treeverse/dvc.git",
+        "git@github.com:treeverse/dvc.git",
+        "http://github.com/treeverse/dvc.git",
+        "https://github.com/treeverse/dvc.git",
+        "ssh://git@github.com/treeverse/dvc.git",
     ],
 )
 def test_git_remote_hash(mocker, git_remote):
     m = mocker.patch("dvc.analytics._git_remote_url", return_value=git_remote)
-    expected = hashlib.md5(b"iterative/dvc.git", usedforsecurity=False).hexdigest()
+    expected = hashlib.md5(b"treeverse/dvc.git", usedforsecurity=False).hexdigest()
 
     assert analytics._git_remote_path_hash(None) == expected
     m.assert_called_once_with(None)

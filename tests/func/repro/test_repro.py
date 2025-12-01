@@ -148,7 +148,7 @@ def test_downstream(M, tmp_dir, dvc):
     assert [stage.name for stage in evaluation] == ["B-gen", "D-gen", "E-gen"]
 
     # B, C should be run (in any order) before D
-    # See https://github.com/iterative/dvc/issues/3602
+    # See https://github.com/treeverse/dvc/issues/3602
     evaluation = dvc.reproduce(PROJECT_FILE + ":A-gen", downstream=True, force=True)
 
     assert len(evaluation) == 5

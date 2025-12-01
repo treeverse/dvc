@@ -730,12 +730,12 @@ def test_pull_allow_missing(tmp_dir, dvc, local_remote):
 def test_pull_granular_excluding_import_that_cannot_be_pulled(
     tmp_dir, dvc, local_remote, mocker
 ):
-    """Regression test for https://github.com/iterative/dvc/issues/10309."""
+    """Regression test for https://github.com/treeverse/dvc/issues/10309."""
 
     mocker.patch("dvc.fs.dvc._DVCFileSystem", side_effect=CloneError("SCM error"))
     (stage,) = tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar"}})
     imp_stage = dvc.imp(
-        "https://user:token@github.com/iterative/dvc.git",
+        "https://user:token@github.com/treeverse/dvc.git",
         "dir",
         out="new_dir",
         rev="HEAD",

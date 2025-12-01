@@ -163,7 +163,7 @@ class Updater:
         if pkg not in instructions:
             return (
                 "Find the latest release at "
-                "[blue]https://github.com/iterative/dvc/releases/latest[/]."
+                "[blue]https://github.com/treeverse/dvc/releases/latest[/]."
             )
 
         instruction = instructions[pkg]

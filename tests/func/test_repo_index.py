@@ -125,7 +125,7 @@ def assert_index_equal(first, second, strict=True, ordered=True):
 
 
 def test_skip_graph_checks(dvc, mocker):
-    # See https://github.com/iterative/dvc/issues/2671 for more info
+    # See https://github.com/treeverse/dvc/issues/2671 for more info
     mock_build_graph = mocker.spy(Index.graph, "fget")
 
     # sanity check

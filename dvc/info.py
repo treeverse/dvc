@@ -158,7 +158,7 @@ def _get_fs_type(path):
             except PermissionError:
                 pass
 
-    # need to follow the symlink: https://github.com/iterative/dvc/issues/5065
+    # need to follow the symlink: https://github.com/treeverse/dvc/issues/5065
     path = pathlib.Path(path).resolve()
 
     for parent in itertools.chain([path], path.parents):

@@ -46,7 +46,7 @@ def test_notify_refs(mocker, status_code, side_effect):
     mock_post = mocker.patch("requests.Session.post", return_value=response)
 
     notify_refs(
-        "git@github.com:iterative/dvc.git",
+        "git@github.com:treeverse/dvc.git",
         "TOKEN",
         pushed=["p1", "p2"],
         removed=["r1", "r2"],
@@ -56,7 +56,7 @@ def test_notify_refs(mocker, status_code, side_effect):
     assert mock_post.call_args == mocker.call(
         urljoin(STUDIO_URL, "/webhook/dvc"),
         json={
-            "repo_url": "git@github.com:iterative/dvc.git",
+            "repo_url": "git@github.com:treeverse/dvc.git",
             "client": "dvc",
             "refs": {
                 "pushed": ["p1", "p2"],

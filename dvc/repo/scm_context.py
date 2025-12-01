@@ -46,7 +46,7 @@ class SCMContext:
         try:
             add_no_submodules(self.scm, paths)
         except UnsupportedIndexFormat:
-            link = "https://github.com/iterative/dvc/issues/610"
+            link = "https://github.com/treeverse/dvc/issues/610"
             add_cmd = self._make_git_add_cmd([relpath(path) for path in paths])
             logger.info("")
             msg = (

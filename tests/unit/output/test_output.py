@@ -42,7 +42,7 @@ def test_save_missing(dvc, mocker):
         ),  # hdfs checksum
         # Not much we can do about hex and oct values without writing our own
         # parser. So listing these test cases just to acknowledge this.
-        # See https://github.com/iterative/dvc/issues/3331.
+        # See https://github.com/treeverse/dvc/issues/3331.
         (0x3451, "13393"),
         (0o1244, "676"),
     ],

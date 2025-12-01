@@ -26,7 +26,7 @@ def test_celery_logs(tmp_dir, scm, dvc, failed_exp_stage, follow, capsys, test_q
 
 
 def test_queue_doesnt_remove_untracked_params_file(tmp_dir, dvc, scm):
-    """Regression test for https://github.com/iterative/dvc/issues/7842"""
+    """Regression test for https://github.com/treeverse/dvc/issues/7842"""
     tmp_dir.gen("params.yaml", "foo: 1")
     stage = dvc.run(cmd="echo ${foo}", params=["foo"], name="echo-foo")
     scm.add(["dvc.yaml", "dvc.lock", ".gitignore"])

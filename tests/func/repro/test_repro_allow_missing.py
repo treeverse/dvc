@@ -36,7 +36,7 @@ def test_repro_allow_missing_and_pull(tmp_dir, dvc, mocker, local_remote):
 def test_repro_allow_missing_upstream_stage_modified(
     tmp_dir, dvc, mocker, local_remote
 ):
-    """https://github.com/iterative/dvc/issues/9530"""
+    """https://github.com/treeverse/dvc/issues/9530"""
     tmp_dir.gen("params.yaml", "param: 1")
     dvc.stage.add(
         name="create-foo", cmd="echo ${param} > foo", params=["param"], outs=["foo"]

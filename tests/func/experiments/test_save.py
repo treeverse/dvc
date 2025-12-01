@@ -105,7 +105,7 @@ def test_exp_save_include_untracked(tmp_dir, dvc, scm):
 
 
 def test_exp_save_include_untracked_warning(tmp_dir, dvc, scm, mocker):
-    """Regression test for https://github.com/iterative/dvc/issues/9061"""
+    """Regression test for https://github.com/treeverse/dvc/issues/9061"""
     setup_stage(tmp_dir, dvc, scm)
 
     new_dir = tmp_dir / "new_dir"

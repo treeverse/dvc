@@ -182,7 +182,7 @@ class HardlinkLock(flufl.lock.Lock, LockBase):
         # number to generate the resulting lock file name, which is unique
         # enough for our application.
         #
-        # [1] https://github.com/iterative/dvc/issues/2582
+        # [1] https://github.com/treeverse/dvc/issues/2582
         self._hostname = socket.gethostname()
 
         self._lifetime = timedelta(days=365)  # Lock for good by default

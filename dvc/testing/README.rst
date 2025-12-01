@@ -4,7 +4,7 @@ dvc.testing.benchmarks
 ======================
 
 Benchmark test definitions are now part of ``dvc.testing``.
-For CLI usage and `bench.dvc.org <https://bench.dvc.org>`_ details see `dvc-bench <https://github.com/iterative/dvc-bench>`_.
+For CLI usage and `bench.dvc.org <https://bench.dvc.org>`_ details see `dvc-bench <https://github.com/treeverse/dvc-bench>`_.
 
 ``dvc.testing.benchmarks`` structure:
 

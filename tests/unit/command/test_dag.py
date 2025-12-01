@@ -119,7 +119,7 @@ def test_show_ascii(repo):
 def test_show_dot(repo):
     # dot file rendering is not deterministic though graph
     # output doesn't depend upon order of lines. Use sorted values
-    # https://github.com/iterative/dvc/pull/7725
+    # https://github.com/treeverse/dvc/pull/7725
     expected = [
         "\"stage: '1'\";",
         "\"stage: '2'\";",

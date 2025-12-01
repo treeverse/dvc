@@ -79,7 +79,7 @@ def dvc_bench_repo(tmp_path_factory, bench_config):
     if url is None:
         pytest.skip(
             "--dvc-bench-repo is not set, "
-            "clone https://github.com/iterative/dvc-bench repository and set its path"
+            "clone https://github.com/treeverse/dvc-bench repository and set its path"
         )
 
     if os.path.isdir(url):

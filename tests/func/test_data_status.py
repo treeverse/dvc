@@ -578,7 +578,7 @@ def test_root_from_file_to_dir(M, tmp_dir, dvc, scm):
 
 
 def test_empty_dir(tmp_dir, scm, dvc, M):
-    # regression testing for https://github.com/iterative/dvc/issues/8958
+    # regression testing for https://github.com/treeverse/dvc/issues/8958
     tmp_dir.dvc_gen({"data": {"foo": "foo"}})
     remove("data")
 
@@ -1216,7 +1216,7 @@ def test_renames(
 def test_shallow_should_iterate_upto_tracked_directory(
     M, tmp_dir, dvc, scm, local_remote
 ):
-    """Testing regression for https://github.com/iterative/dvc/issues/10899."""
+    """Testing regression for https://github.com/treeverse/dvc/issues/10899."""
 
     tmp_dir.scm_gen({"dir": {".gitkeep": ""}}, commit="mk dir")
     dataset_root = join("dir", "data", "")

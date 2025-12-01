@@ -69,7 +69,7 @@ def session_app(tmp_path_factory) -> FSApp:
     """Session scoped experiments queue celery app."""
     from kombu.transport.filesystem import Channel
 
-    # related to https://github.com/iterative/dvc-task/issues/61
+    # related to https://github.com/treeverse/dvc-task/issues/61
     Channel.QoS.restore_at_shutdown = False
 
     from dvc_task.app import FSApp

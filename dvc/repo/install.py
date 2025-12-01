@@ -16,7 +16,7 @@ def pre_commit_install(scm: "Git") -> None:
     config_path = os.path.join(scm.root_dir, ".pre-commit-config.yaml")
     with modify_yaml(config_path) as config:
         entry = {
-            "repo": "https://github.com/iterative/dvc",
+            "repo": "https://github.com/treeverse/dvc",
             "rev": ".".join(map(str, version_tuple[:3])),
             "hooks": [
                 {
