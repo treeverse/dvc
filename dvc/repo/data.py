@@ -456,41 +456,17 @@ def _get_entries_not_in_remote(
             n += 1
             cb.set_size(n)
 
-        entries_list = list(entries.values())
-        if hasattr(storage_map, "bulk_remote_exists"):
+        results = storage_map.bulk_remote_exists(
+            list(entries.values()), refresh=remote_refresh, callback=cb
+        )
+        for key, entry in entries.items():
+            k = (*key, "") if entry.meta and entry.meta.isdir else key
             try:
-                results = storage_map.bulk_remote_exists(
-                    entries_list, refresh=remote_refresh
-                )
-                for key, entry in entries.items():
-                    k = (*key, "") if entry.meta and entry.meta.isdir else key
-                    try:
-                        if not results.get(entry, True):
-                            missing_entries.append(os.path.sep.join(k))
-                    except StorageKeyError:
-                        pass
-                    finally:
-                        cb.relative_update()
-            except Exception:
-                for key, entry in entries.items():
-                    k = (*key, "") if entry.meta and entry.meta.isdir else key
-                    try:
-                        if not storage_map.remote_exists(entry, refresh=remote_refresh):
-                            missing_entries.append(os.path.sep.join(k))
-                    except StorageKeyError:
-                        pass
-                    finally:
-                        cb.relative_update()
-        else:
-            for key, entry in entries.items():
-                k = (*key, "") if entry.meta and entry.meta.isdir else key
-                try:
-                    if not storage_map.remote_exists(entry, refresh=remote_refresh):
-                        missing_entries.append(os.path.sep.join(k))
-                except StorageKeyError:
-                    pass
-                finally:
-                    cb.relative_update()
+                if not results.get(entry, False):
+                    missing_entries.append(os.path.sep.join(k))
+            except StorageKeyError:
+                pass
+
     data_index.onerror = orig_data_index_onerror
     return missing_entries
 
