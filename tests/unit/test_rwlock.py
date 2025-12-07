@@ -1,5 +1,7 @@
+import concurrent.futures
 import json
 import os
+import time
 
 import pytest
 
@@ -59,6 +61,7 @@ def test_rwlock_reentrant(tmp_path):
 def test_rwlock_edit_is_guarded(tmp_path, mocker):
     # patching to speedup tests
     mocker.patch("dvc.lock.DEFAULT_TIMEOUT", 0.01)
+    mocker.patch("dvc.rwlock.RWLOCK_THREAD_TIMEOUT", 0.01)
 
     path = os.fspath(tmp_path)
 
@@ -66,6 +69,21 @@ def test_rwlock_edit_is_guarded(tmp_path, mocker):
         with pytest.raises(LockError):
             with _edit_rwlock(path, localfs, False):
                 pass
+
+
+def test_rwlock_multiple_threads(tmp_path, mocker):
+    # patching to speedup tests
+    mocker.patch("dvc.rwlock.RWLOCK_THREAD_TIMEOUT", 0.01)
+    path = os.fspath(tmp_path)
+    foo = "foo"
+
+    def work():
+        with rwlock(path, localfs, "cmd1", [foo], [], False):
+            time.sleep(1)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(work) for _ in range(2)]
+        concurrent.futures.wait(futures)
 
 
 def test_rwlock_subdirs(tmp_path):
