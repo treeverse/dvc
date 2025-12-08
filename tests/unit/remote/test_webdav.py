@@ -153,3 +153,31 @@ def test_remote_with_jobs(dvc, base_url, fs_cls):
     assert config["user"] == "admin"
     assert f"{scheme}://{user}@example.com" in config["host"]
     assert cls is fs_cls
+
+
+def test_bearer_token_command(mocker):
+    mock_auth_obj = mocker.Mock()
+    mock_get_auth = mocker.patch(
+        "dvc_webdav.get_bearer_auth", return_value=mock_auth_obj
+    )
+
+    command = "my-token-cmd.sh"
+    timeout = 10
+
+    # Configuration with potential conflicts
+    config = {
+        "url": url,
+        "token": "static-token-value",
+        "user": "conflict-user",
+        "password": "conflict-password",
+        "bearer_token_command": command,
+        "timeout": timeout,
+    }
+
+    fs = WebDAVFileSystem(**config)
+
+    # the factory function was invoked with the correct arguments from the config.
+    mock_get_auth.assert_called_once_with(command, timeout)
+
+    # the generated auth object is correctly injected into `fs_args`.
+    assert fs.fs_args["auth"] == mock_auth_obj

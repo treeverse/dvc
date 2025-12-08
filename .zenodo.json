@@ -4,5 +4,5 @@
     "data-science", "data-version-control", "machine-learning", "git",
     "developer-tools", "reproducibility", "collaboration", "ai", "python"],
   "contributors": [
-    {"name": "DVC team", "type": "Other", "affiliation": "Iterative"}]
+    {"name": "DVC team", "type": "Other", "affiliation": "Treeverse"}]
 }

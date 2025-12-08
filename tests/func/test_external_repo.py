@@ -101,7 +101,7 @@ def test_pull_subdir_file(tmp_dir, erepo_dir):
 
 def test_relative_remote(erepo_dir, tmp_dir):
     # these steps reproduce the script on this issue:
-    # https://github.com/iterative/dvc/issues/2756
+    # https://github.com/treeverse/dvc/issues/2756
     with erepo_dir.chdir():
         erepo_dir.dvc_gen("file", "contents", commit="create file")
 

@@ -59,7 +59,7 @@ def test_remote_missing_deps_are_correctly_reported(tmp_dir, caplog, mocker, pkg
     else:
         expected += (
             "\nPlease report this bug to "
-            "<https://github.com/iterative/dvc/issues>. "
+            "<https://github.com/treeverse/dvc/issues>. "
             "Thank you!"
         )
     assert expected in caplog.text

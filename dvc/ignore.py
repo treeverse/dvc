@@ -508,7 +508,7 @@ class DvcIgnoreFilter:
 
     def check_ignore(self, target: str) -> CheckIgnoreResult:
         # NOTE: can only be used in `dvc check-ignore`, see
-        # https://github.com/iterative/dvc/issues/5046
+        # https://github.com/treeverse/dvc/issues/5046
         full_target = self.fs.abspath(target)
         matched_patterns: list[PatternInfo] = []
         ignore = False
@@ -525,7 +525,7 @@ class DvcIgnoreFilter:
         self, fs: "FileSystem", path: str, ignore_subrepos: bool = True
     ) -> bool:
         # NOTE: can't use self.check_ignore(path).match for now, see
-        # https://github.com/iterative/dvc/issues/4555
+        # https://github.com/treeverse/dvc/issues/4555
         if fs.protocol != Schemes.LOCAL:
             return False
         if fs.isfile(path):

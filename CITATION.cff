@@ -6,8 +6,8 @@ message: >-
 type: software
 authors:
   - name: The DVC team and contributors
-    website: 'https://github.com/iterative'
-repository-code: 'https://github.com/iterative/dvc'
+    website: 'https://github.com/treeverse'
+repository-code: 'https://github.com/treeverse/dvc'
 url: 'https://dvc.org'
 abstract: >-
   DVC is a tool for data science that takes advantage of existing software engineering toolset.

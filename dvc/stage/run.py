@@ -51,7 +51,7 @@ def _warn_if_fish(executable):
         "Be aware that it might cause problems by overwriting "
         "your current environment variables with values defined "
         "in 'config.fish', which might affect your command. See "
-        "https://github.com/iterative/dvc/issues/1307. "
+        "https://github.com/treeverse/dvc/issues/1307. "
     )
 
 
@@ -99,7 +99,7 @@ def prepare_kwargs(stage, run_env=None):
     #
     # [1] https://github.com/python/cpython/blob/3.7/Lib/subprocess.py
     #                                                            #L1426
-    # [2] https://github.com/iterative/dvc/issues/2506
+    # [2] https://github.com/treeverse/dvc/issues/2506
     #                                           #issuecomment-535396799
     kwargs["shell"] = os.name == "nt"
     return kwargs

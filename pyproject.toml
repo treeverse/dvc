@@ -18,7 +18,7 @@ keywords = [
 ]
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-maintainers = [{ name = "Iterative", email = "support@dvc.org" }]
+maintainers = [{ name = "Treeverse", email = "support@dvc.org" }]
 authors = [{ name = "Dmitry Petrov", email = "dmitry@dvc.org" }]
 requires-python = ">=3.9"
 classifiers = [
@@ -29,6 +29,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dynamic = ["version"]
 
@@ -85,7 +86,7 @@ gdrive = ["dvc-gdrive>=3,<4"]
 gs = ["dvc-gs>=3.0.2,<4"]
 hdfs = ["dvc-hdfs>=3,<4"]
 lint = [
-    "mypy==1.18.2",
+    "mypy==1.19.0",
     "pandas-stubs",
     "types-colorama",
     "types-psutil",
@@ -123,14 +124,14 @@ tests = [
     "sqlalchemy>=1,<3", # optional dependency for `import-db`
     "pandas>=1", # optional dependency for `import-db`
 ]
-webdav = ["dvc-webdav>=3,<4"]
+webdav = ["dvc-webdav>=3.0.1,<4"]
 webhdfs = ["dvc-webhdfs>=3.1,<4"]
 webhdfs_kerberos = ["dvc-webhdfs[kerberos]>=3.1,<4"]
 
 [project.urls]
 Documentation = "https://dvc.org/doc"
-Issues = "https://github.com/iterative/dvc/issues"
-Source = "https://github.com/iterative/dvc"
+Issues = "https://github.com/treeverse/dvc/issues"
+Source = "https://github.com/treeverse/dvc"
 
 [project.scripts]
 dvc = "dvc.cli:main"
