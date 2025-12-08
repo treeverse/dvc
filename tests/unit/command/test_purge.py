@@ -29,6 +29,7 @@ def test_purge_args_and_call(dvc, scm, mocker):
         recursive=True,
         force=True,
         dry_run=True,
+        unused_cache=False,
     )
 
 
@@ -46,6 +47,7 @@ def test_purge_defaults(mocker):
         recursive=False,
         force=False,
         dry_run=False,
+        unused_cache=False,
     )
 
 
@@ -74,3 +76,28 @@ def test_purge_yes_skips_confirm(mocker):
     # -y should skip confirmation
     confirm.assert_not_called()
     m.assert_called_once()
+
+
+def test_purge_unused_cache_arg(mocker):
+    cli_args = parse_args(
+        [
+            "purge",
+            "--unused-cache",
+            "--force",
+        ]
+    )
+
+    cmd = cli_args.func(cli_args)
+
+    mocker.patch("dvc.ui.ui.confirm", return_value=True)
+    m = mocker.patch("dvc.repo.Repo.purge", return_value=0)
+
+    assert cmd.run() == 0
+
+    m.assert_called_once_with(
+        targets=[],
+        recursive=False,
+        force=True,
+        dry_run=False,
+        unused_cache=True,
+    )

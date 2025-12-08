@@ -113,6 +113,58 @@ def _remove_outs(outs, dry_run: bool) -> int:
     return removed
 
 
+def _compute_checked_out_hashes(repo: "Repo"):
+    # Collect all stages
+    items = list(repo.index.stages)
+
+    # Flatten to outs
+    all_outs = []
+    for st in items:
+        all_outs.extend(st.outs)
+
+    # Keep only outs that actually exist in the workspace
+    used = set()
+    for out in all_outs:
+        if out.use_cache and out.exists and out.hash_info and out.hash_info.value:
+            used.add(out.hash_info.value)
+
+    return used
+
+
+def _remove_unused_cache(repo: "Repo", dry_run: bool) -> int:
+    """
+    Remove cache objects whose outputs are not currently checked out.
+    A 'used' object is defined as: workspace file exists AND has a hash.
+    """
+    # Compute hashes for outputs that are currently checked out
+    used_hashes = _compute_checked_out_hashes(repo)
+
+    removed = 0
+
+    # Iterate through all local cache ODBs
+    for _scheme, odb in repo.cache.by_scheme():
+        if not odb:
+            continue
+
+        # Iterate through all cached object IDs
+        for obj_id in list(odb.all()):
+            if obj_id in used_hashes:
+                continue
+
+            cache_path = odb.oid_to_path(obj_id)
+
+            if dry_run:
+                logger.info("[dry-run] Would remove unused cache %s", cache_path)
+            else:
+                try:
+                    odb.fs.remove(cache_path, recursive=True)
+                    removed += 1
+                except Exception:
+                    logger.exception("Failed to remove unused cache %s", cache_path)
+
+    return removed
+
+
 @locked
 def purge(
     self: "Repo",
@@ -120,6 +172,7 @@ def purge(
     recursive: bool = False,
     force: bool = False,
     dry_run: bool = False,
+    unused_cache: bool = False,
 ) -> int:
     """
     Purge removes local copies of DVC-tracked outputs and their cache.
@@ -147,12 +200,32 @@ def purge(
         logger.info("No DVC-tracked outputs found to purge.")
         return 0
 
-    # Run safety checks
-    _check_dirty(outs, force)
-    _check_remote_backup(self, outs, force)
+    # Determine whether we should remove outs.
+    # If unused_cache mode, don't remove anything.
+    remove_outs = not unused_cache
+    if unused_cache and targets is not None:
+        logger.warning(
+            "`--unused-cache` mode should be used exclusively,"
+            " other args have been provided but will be ignored."
+        )
 
-    # Remove outs
-    removed = _remove_outs(outs, dry_run)
+    removed = 0
+    if remove_outs:
+        # Run safety checks
+        _check_dirty(outs, force)
+        _check_remote_backup(self, outs, force)
+
+        # Remove outs
+        removed = _remove_outs(outs, dry_run)
+
+    # Remove unused cache if requested
+    if unused_cache:
+        logger.info("Removing unused cache objects...")
+        unused_removed = _remove_unused_cache(self, dry_run=dry_run)
+        if unused_removed:
+            logger.info("Removed %d unused cache objects.", unused_removed)
+        else:
+            logger.info("No unused cache objects to remove.")
 
     if removed:
         logger.info("Removed %d outputs (workspace + cache).", removed)

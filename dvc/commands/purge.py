@@ -44,6 +44,7 @@ class CmdPurge(CmdBase):
             recursive=self.args.recursive,
             force=self.args.force,
             dry_run=self.args.dry_run,
+            unused_cache=self.args.unused_cache,
         )
         return 0
 
@@ -52,7 +53,9 @@ def add_parser(subparsers, parent_parser):
     PURGE_HELP = "Remove tracked outputs and their cache."
     PURGE_DESCRIPTION = (
         "Removes cache objects and workspace copies of DVC-tracked outputs.\n"
-        "Metadata remains intact, and non-DVC files are untouched."
+        "Metadata remains intact, and non-DVC files are untouched.\n\n"
+        "`--unused-cache` mode will clear the cache of any files not checked\n"
+        "out in the current workspace."
     )
     purge_parser = subparsers.add_parser(
         "purge",
@@ -94,6 +97,12 @@ def add_parser(subparsers, parent_parser):
         action="store_true",
         default=False,
         help="Do not prompt for confirmation (respects safety checks).",
+    )
+    purge_parser.add_argument(
+        "--unused-cache",
+        action="store_true",
+        default=False,
+        help="Remove cache objects not currently checked out in the workspace.",
     )
 
     purge_parser.set_defaults(func=CmdPurge)
