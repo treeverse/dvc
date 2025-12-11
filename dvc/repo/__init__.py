@@ -238,8 +238,9 @@ class Repo:
             Callable[[str, Exception], None]
         ] = None
         self._lock_depth: int = 0
-        # Caches for hash computations during repro to avoid redundant tree builds
-        self._hash_cache: dict[tuple[str, str, str], tuple["Meta", "HashInfo"]] = {}
+        # Caches for hash computations during repro to avoid redundant tree builds.
+        # Key is (path, hash_name, fs_protocol).
+        self._hash_cache: dict[tuple[str, str, str], tuple[Meta, HashInfo]] = {}
 
     def __str__(self):
         return self.url or self.root_dir
@@ -664,6 +665,9 @@ class Repo:
             self.dvcfs.close()
         if self._data_index is not None:
             self._data_index.close()
+        if self._hash_cache is not None:
+            # Free up memory.
+            self._hash_cache.clear()
 
     def _reset(self):
         self.scm._reset()

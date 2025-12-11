@@ -531,6 +531,10 @@ class Output:
             self.cache.oid_to_path(self.hash_info.value)
         )
 
+    @property
+    def _hash_cache_key(self) -> tuple[str, str, str]:
+        return (self.fs_path, self.hash_name, self.fs.protocol)
+
     def get_hash(self):
         _, hash_info = self._get_hash_meta()
         return hash_info
@@ -556,9 +560,10 @@ class Output:
             odb = self.local_cache
 
         # Cache hash computations during repro to avoid redundant tree builds
-        cache_key = (self.fs_path, self.hash_name, self.fs.protocol)
-        if self.repo is not None and cache_key in self.repo._hash_cache:
-            return self.repo._hash_cache[cache_key]
+        if self.repo is not None and (
+            cached := self.repo._hash_cache.get(self._hash_cache_key)
+        ):
+            return cached
 
         _, meta, obj = self._build(
             odb,
@@ -570,7 +575,7 @@ class Output:
         )
 
         if self.repo is not None:
-            self.repo._hash_cache[cache_key] = (meta, obj.hash_info)
+            self.repo._hash_cache[self._hash_cache_key] = (meta, obj.hash_info)
 
         return meta, obj.hash_info
 
@@ -715,13 +720,12 @@ class Output:
         self.update_legacy_hash_name()
 
         # For dependencies, reuse cached hash if available
-        cache_key = (self.fs_path, self.hash_name, self.fs.protocol)
         if (
             self.IS_DEPENDENCY
             and self.repo is not None
-            and cache_key in self.repo._hash_cache
+            and self._hash_cache_key in self.repo._hash_cache
         ):
-            self.meta, self.hash_info = self.repo._hash_cache[cache_key]
+            self.meta, self.hash_info = self.repo._hash_cache[self._hash_cache_key]
             self.files = None
             return
 
@@ -748,7 +752,7 @@ class Output:
         self.hash_info = self.obj.hash_info
 
         if self.repo is not None:
-            self.repo._hash_cache[cache_key] = (self.meta, self.hash_info)
+            self.repo._hash_cache[self._hash_cache_key] = (self.meta, self.hash_info)
 
         self.files = None
 
