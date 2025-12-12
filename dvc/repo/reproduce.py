@@ -1,4 +1,7 @@
+import concurrent.futures
 from collections.abc import Iterable
+from dataclasses import dataclass
+from enum import Enum
 from typing import TYPE_CHECKING, Callable, NoReturn, Optional, TypeVar, Union, cast
 
 from funcy import ldistinct
@@ -120,14 +123,6 @@ def _reproduce_stage(stage: "Stage", **kwargs) -> Optional["Stage"]:
     return ret
 
 
-def _get_upstream_downstream_nodes(
-    graph: Optional["DiGraph"], node: T
-) -> tuple[list[T], list[T]]:
-    succ = list(graph.successors(node)) if graph else []
-    pre = list(graph.predecessors(node)) if graph else []
-    return succ, pre
-
-
 def _repr(stages: Iterable["Stage"]) -> str:
     return humanize.join(repr(stage.addressing) for stage in stages)
 
@@ -155,54 +150,128 @@ def _raise_error(exc: Optional[Exception], *stages: "Stage") -> NoReturn:
     raise ReproductionError(f"failed to reproduce{segment} {names}") from exc
 
 
+class ReproStatus(Enum):
+    READY = "ready"
+    IN_PROGRESS = "in-progress"
+    COMPLETE = "complete"
+    SKIPPED = "skipped"
+    FAILED = "failed"
+
+
+@dataclass
+class StageInfo:
+    upstream: list["Stage"]
+    upstream_unfinished: set["Stage"]
+    downstream: list["Stage"]
+    force: bool
+    status: ReproStatus
+    result: Optional["Stage"]
+
+
+def _start_ready_stages(
+    to_repro: dict["Stage", StageInfo],
+    executor: concurrent.futures.ThreadPoolExecutor,
+    repro_fn: Callable = _reproduce_stage,
+    **kwargs,
+) -> dict[concurrent.futures.Future["Stage"], "Stage"]:
+    futures = {
+        executor.submit(
+            repro_fn,
+            stage,
+            upstream=stage_info.upstream,
+            force=stage_info.force,
+            **kwargs,
+        ): stage
+        for stage, stage_info in to_repro.items()
+        if stage_info.status == ReproStatus.READY and not stage_info.upstream_unfinished
+    }
+    for stage in futures.values():
+        to_repro[stage].status = ReproStatus.IN_PROGRESS
+    return futures
+
+
+def _result_or_raise(
+    to_repro: dict["Stage", StageInfo], stages: list["Stage"], on_error: str
+) -> list["Stage"]:
+    result: list[Stage] = []
+    failed: list[Stage] = []
+    # Preserve original order
+    for stage in stages:
+        stage_info = to_repro[stage]
+        if stage_info.status == ReproStatus.FAILED:
+            failed.append(stage)
+        elif stage_info.result:
+            result.append(stage_info.result)
+
+    if on_error != "ignore" and failed:
+        _raise_error(None, *failed)
+
+    return result
+
+
 def _reproduce(
     stages: list["Stage"],
     graph: Optional["DiGraph"] = None,
     force_downstream: bool = False,
     on_error: str = "fail",
     force: bool = False,
-    repro_fn: Callable = _reproduce_stage,
+    max_workers: int = 10,
     **kwargs,
 ) -> list["Stage"]:
     assert on_error in ("fail", "keep-going", "ignore")
 
-    result: list[Stage] = []
-    failed: list[Stage] = []
-    to_skip: dict[Stage, Stage] = {}
     ret: Optional[Stage] = None
+    to_repro = {
+        stage: StageInfo(
+            upstream=(upstream := list(graph.successors(stage)) if graph else []),
+            upstream_unfinished=set(upstream),
+            downstream=list(graph.predecessors(stage)) if graph else [],
+            force=force,
+            status=ReproStatus.READY,
+            result=None,
+        )
+        for stage in stages
+    }
 
-    force_state = dict.fromkeys(stages, force)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = _start_ready_stages(to_repro, executor, **kwargs)
+        while futures:
+            done, _ = concurrent.futures.wait(
+                futures, return_when=concurrent.futures.FIRST_COMPLETED
+            )
+            for future in done:
+                stage = futures.pop(future)
+                stage_info = to_repro[stage]
 
-    for stage in stages:
-        if stage in to_skip:
-            continue
+                try:
+                    ret = future.result()
+                except Exception as exc:  # noqa: BLE001
+                    stage_info.status = ReproStatus.FAILED
+                    if on_error == "fail":
+                        _raise_error(exc, stage)
 
-        if ret:
-            logger.info("")  # add a newline
+                    dependents = handle_error(graph, on_error, exc, stage)
+                    for dependent in dependents:
+                        to_repro[dependent].status = ReproStatus.SKIPPED
 
-        upstream, downstream = _get_upstream_downstream_nodes(graph, stage)
-        force_stage = force_state[stage]
+                    continue
 
-        try:
-            ret = repro_fn(stage, upstream=upstream, force=force_stage, **kwargs)
-        except Exception as exc:  # noqa: BLE001
-            failed.append(stage)
-            if on_error == "fail":
-                _raise_error(exc, stage)
+                stage_info.status = ReproStatus.COMPLETE
+                for dependent in stage_info.downstream:
+                    if dependent not in to_repro:
+                        continue
+                    dependent_info = to_repro[dependent]
+                    if stage in dependent_info.upstream_unfinished:
+                        dependent_info.upstream_unfinished.remove(stage)
+                    if force_downstream and (ret or stage_info.force):
+                        dependent_info.force = True
 
-            dependents = handle_error(graph, on_error, exc, stage)
-            to_skip.update(dict.fromkeys(dependents, stage))
-            continue
+                if ret:
+                    stage_info.result = ret
 
-        if force_downstream and (ret or force_stage):
-            force_state.update(dict.fromkeys(downstream, True))
+            futures.update(_start_ready_stages(to_repro, executor, **kwargs))
 
-        if ret:
-            result.append(ret)
-
-    if on_error != "ignore" and failed:
-        _raise_error(None, *failed)
-    return result
+    return _result_or_raise(to_repro, stages, on_error)
 
 
 @locked
