@@ -522,6 +522,8 @@ def test_gc_dry_with_corrupted_cache(tmp_dir, dvc):
 
 def test_gc_dry_format_report_lines():
     """Verifies the complete GC report is assembled correctly."""
+    import re
+
     from dvc.repo.gc import ObjectType, _format_report_lines
 
     now = datetime.datetime.now(tz=datetime.timezone.utc).astimezone()
@@ -545,30 +547,35 @@ def test_gc_dry_format_report_lines():
     lines = _format_report_lines(test_results)
     assert len(lines) == 5
 
-    summary, headers, divider, first_row, second_row = (
-        lines[0],
-        lines[1],
-        lines[2],
-        lines[3],
-        lines[4],
-    )
+    summary, headers, divider, first_row, second_row = lines
 
-    assert "total 2 objects" in summary
-    assert "12.1k" in summary
+    assert summary.startswith("total 2 objects")
+    assert "12.1k" in summary.lower()
 
     assert headers.startswith("Type  OID")
-
     assert divider.startswith("----  --------")
 
-    assert first_row.startswith(ObjectType.FILE.value)
-    assert "a1b2c3d4" in first_row
-    assert "12.1k" in first_row
-    assert now.strftime("%Y-%m-%d") in first_row
+    parsed_first_row = re.split(r"\s{2,}", first_row.strip())
+    parsed_second_row = re.split(r"\s{2,}", second_row.strip())
 
-    assert second_row.startswith(ObjectType.DIR.value)
-    assert "f9e8d7c6" in second_row
-    assert " - " in second_row
-    assert "  -  " in second_row
+    expected_first_row = [
+        ObjectType.FILE.value,
+        "a1b2c3d4",
+        "12.1k",
+        now.strftime("%Y-%m-%d %H:%M:%S"),
+        "/fake/path/to/a1b2c3d4",
+    ]
+
+    expected_second_row = [
+        ObjectType.DIR.value,
+        "f9e8d7c6",
+        "-",
+        "-",
+        "/fake/path/to/f9e8d7c6.dir",
+    ]
+
+    assert parsed_first_row == expected_first_row
+    assert parsed_second_row == expected_second_row
 
 
 def test_gc_dry_report_empty():
