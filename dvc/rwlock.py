@@ -1,5 +1,6 @@
 import json
 import os
+import threading
 from collections import defaultdict
 from contextlib import contextmanager
 
@@ -25,6 +26,8 @@ SCHEMA = Schema(
     }
 )
 
+RWLOCK_THREAD_LOCK = threading.Lock()
+RWLOCK_THREAD_TIMEOUT = 3
 RWLOCK_FILE = "rwlock"
 RWLOCK_LOCK = "rwlock.lock"
 
@@ -50,21 +53,26 @@ def _edit_rwlock(lock_dir, fs, hardlink):
         tmp_dir=lock_dir,
         hardlink_lock=hardlink,
     )
-    with rwlock_guard:
-        try:
-            with fs.open(path, encoding="utf-8") as fobj:
-                lock = SCHEMA(json.load(fobj))
-        except FileNotFoundError:
-            lock = SCHEMA({})
-        except json.JSONDecodeError as exc:
-            raise RWLockFileCorruptedError(path) from exc
-        except Invalid as exc:
-            raise RWLockFileFormatError(path) from exc
-        lock["read"] = defaultdict(list, lock["read"])
-        lock["write"] = defaultdict(dict, lock["write"])
-        yield lock
-        with fs.open(path, "w", encoding="utf-8") as fobj:
-            json.dump(lock, fobj)
+    RWLOCK_THREAD_LOCK.acquire(timeout=RWLOCK_THREAD_TIMEOUT)
+    try:
+        with rwlock_guard:
+            try:
+                with fs.open(path, encoding="utf-8") as fobj:
+                    lock = SCHEMA(json.load(fobj))
+            except FileNotFoundError:
+                lock = SCHEMA({})
+            except json.JSONDecodeError as exc:
+                raise RWLockFileCorruptedError(path) from exc
+            except Invalid as exc:
+                raise RWLockFileFormatError(path) from exc
+            lock["read"] = defaultdict(list, lock["read"])
+            lock["write"] = defaultdict(dict, lock["write"])
+            yield lock
+            with fs.open(path, "w", encoding="utf-8") as fobj:
+                json.dump(lock, fobj)
+    finally:
+        if RWLOCK_THREAD_LOCK.locked():
+            RWLOCK_THREAD_LOCK.release()
 
 
 def _infos_to_str(infos):
