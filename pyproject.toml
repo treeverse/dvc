@@ -115,7 +115,6 @@ tests = [
     "pytest-cov>=4.1.0",
     "pytest-docker>=1,<4",
     "pytest-mock",
-    "pytest-test-utils",
     "pytest-timeout>=2",
     "pytest-xdist>=3.2",
     'pywin32>=225; sys_platform == "win32"', # optional test dependency
