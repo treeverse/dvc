@@ -4,6 +4,7 @@ from funcy import set_in
 from dvc.render import FIELD, FILENAME, REVISION
 from dvc.render.converter.vega import VegaConverter
 from dvc.render.match import PlotsData, _squash_plots_properties, match_defs_renderers
+from dvc.testing import matchers as M
 
 
 @pytest.mark.parametrize(
@@ -118,7 +119,7 @@ def test_group_definitions(data, expected):
     assert grouped == expected
 
 
-def test_match_renderers(M):
+def test_match_renderers():
     data = {
         "v1": {
             "definitions": {
@@ -187,7 +188,7 @@ def test_match_renderers(M):
     assert not renderer_with_errors.definition_errors
 
 
-def test_flat_datapoints_errors_are_caught(M, mocker):
+def test_flat_datapoints_errors_are_caught(mocker):
     d = {}
     d = set_in(
         d,

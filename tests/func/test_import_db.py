@@ -6,6 +6,8 @@ import pandas as pd
 import pytest
 from funcy import compact
 
+from dvc.testing import matchers as M
+
 
 @pytest.fixture
 def db_path(tmp_dir):
@@ -46,7 +48,7 @@ def load_data(file, output_format):
         ({"table": "model"}, "model"),
     ],
 )
-def test(M, tmp_dir, scm, dvc, db_connection, seed_db, output_format, args, file_name):
+def test(tmp_dir, scm, dvc, db_connection, seed_db, output_format, args, file_name):
     seed_db(values=range(5))
     if output_format == "json":
         file_size = 96, 192

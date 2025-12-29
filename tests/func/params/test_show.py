@@ -6,6 +6,7 @@ import pytest
 from dvc.dvcfile import PROJECT_FILE
 from dvc.repo import Repo
 from dvc.repo.metrics.show import FileResult, Result
+from dvc.testing import matchers as M
 from dvc_data.index import DataIndexDirError
 
 
@@ -197,7 +198,7 @@ def test_top_level_parametrized(tmp_dir, dvc):
     }
 
 
-def test_param_in_a_tracked_directory_with_missing_dir_file(M, tmp_dir, dvc):
+def test_param_in_a_tracked_directory_with_missing_dir_file(tmp_dir, dvc):
     tmp_dir.dvc_gen({"dir": {"file": "2"}})
     (tmp_dir / "dvc.yaml").dump({"params": [join("dir", "file")]})
     shutil.rmtree(tmp_dir / "dir")  # remove from workspace

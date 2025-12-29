@@ -4,6 +4,7 @@ from networkx import DiGraph
 from networkx.utils import graphs_equal
 
 from dvc.repo.reproduce import get_active_graph, plan_repro
+from dvc.testing import matchers as M
 
 
 def test_active_graph(mocker):
@@ -26,7 +27,7 @@ def test_active_graph(mocker):
     assert not graphs_equal(g, active)
 
 
-def test_repro_plan(M):
+def test_repro_plan():
     r"""
              1
            /  \
