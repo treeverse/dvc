@@ -13,7 +13,13 @@ from dvc.stage.exceptions import (
 from dvc.utils import relpath
 from dvc.utils.collections import apply_diff
 from dvc.utils.objects import cached_property
-from dvc.utils.serialize import dump_yaml, modify_yaml
+from dvc.utils.serialize import (
+    FastYAMLParseError,
+    dump_yaml,
+    dump_yaml_fast,
+    load_yaml_fast,
+    modify_yaml,
+)
 
 if TYPE_CHECKING:
     from dvc.repo import Repo
@@ -85,6 +91,10 @@ class FileMixin:
         self.path = path
         self.verify = verify
 
+    @cached_property
+    def _use_fast_yaml(self) -> bool:
+        return self.repo.config.get("feature", {}).get("fast_yaml", False)
+
     def __repr__(self):
         return f"{self.__class__.__name__}: {relpath(self.path, self.repo.root_dir)}"
 
@@ -152,6 +162,7 @@ class FileMixin:
             self.path,
             self.SCHEMA,  # type: ignore[arg-type]
             self.repo.fs,
+            use_fast_yaml=self._use_fast_yaml,
             **kwargs,
         )
 
@@ -428,12 +439,44 @@ class Lockfile(FileMixin):
         if not stages:
             return
 
+        if self._use_fast_yaml:
+            self._dump_stages_fast(stages, **kwargs)
+        else:
+            self._dump_stages_slow(stages, **kwargs)
+
+    def _dump_stages_fast(self, stages, **kwargs):
+        try:
+            data = load_yaml_fast(self.path, self.repo.fs)
+        except (FileNotFoundError, FastYAMLParseError):
+            data = {}
+
+        if not data:
+            data = {"schema": "2.0"}
+            logger.info("Generating lock file '%s'", self.relpath)
+
+        data.setdefault("stages", {})
+        is_modified = False
+        log_updated = False
+
+        for stage in stages:
+            stage_data = serialize.to_lockfile(stage, **kwargs)
+            if data["stages"].get(stage.name, {}) != stage_data.get(stage.name, {}):
+                is_modified = True
+                if not log_updated:
+                    logger.info("Updating lock file '%s'", self.relpath)
+                    log_updated = True
+            data["stages"].update(stage_data)
+
+        if is_modified:
+            dump_yaml_fast(self.path, data, fs=self.repo.fs)
+            self.repo.scm_context.track_file(self.relpath)
+
+    def _dump_stages_slow(self, stages, **kwargs):
         is_modified = False
         log_updated = False
         with modify_yaml(self.path, fs=self.repo.fs) as data:
             if not data:
                 data.update({"schema": "2.0"})
-                # order is important, meta should always be at the top
                 logger.info("Generating lock file '%s'", self.relpath)
 
             data["stages"] = data.get("stages", {})

@@ -54,18 +54,26 @@ def _extract_metrics(metrics, path: str):
     return ret
 
 
-def _read_metric(fs: "FileSystem", path: str, **load_kwargs) -> Any:
-    val = load_path(path, fs, **load_kwargs)
+def _read_metric(
+    fs: "FileSystem", path: str, use_fast_yaml: bool = False, **load_kwargs
+) -> Any:
+    val = load_path(path, fs, use_fast_yaml=use_fast_yaml, **load_kwargs)
     val = _extract_metrics(val, path)
     return val or {}
 
 
 def _read_metrics(
-    fs: "FileSystem", metrics: Iterable[str], **load_kwargs
+    fs: "FileSystem",
+    metrics: Iterable[str],
+    use_fast_yaml: bool = False,
+    **load_kwargs,
 ) -> Iterator[tuple[str, Union[Exception, Any]]]:
     for metric in metrics:
         try:
-            yield metric, _read_metric(fs, metric, **load_kwargs)
+            yield (
+                metric,
+                _read_metric(fs, metric, use_fast_yaml=use_fast_yaml, **load_kwargs),
+            )
         except Exception as exc:  # noqa: BLE001
             logger.debug(exc)
             yield metric, exc
@@ -158,9 +166,12 @@ def _gather_metrics(
     # the result and convert to appropriate repo-relative os.path.
     files = _collect_metrics(repo, targets=targets, stages=stages, outs_only=outs_only)
     data = {}
+    use_fast_yaml = repo.config.get("feature", {}).get("fast_yaml", False)
 
     fs = repo.dvcfs
-    for fs_path, result in _read_metrics(fs, files, cache=True):
+    for fs_path, result in _read_metrics(
+        fs, files, use_fast_yaml=use_fast_yaml, cache=True
+    ):
         repo_path = fs_path.lstrip(fs.root_marker)
         repo_os_path = os.sep.join(fs.parts(repo_path))
         if not isinstance(result, Exception):
