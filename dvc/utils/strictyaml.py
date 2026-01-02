@@ -16,8 +16,10 @@ from dvc.exceptions import PrettyDvcException
 from dvc.ui import ui
 from dvc.utils.serialize import (
     EncodingError,
+    FastYAMLParseError,
     YAMLFileCorruptedError,
     parse_yaml,
+    parse_yaml_fast,
     parse_yaml_for_update,
 )
 from dvc_objects.fs.local import LocalFileSystem
@@ -284,6 +286,7 @@ def load(
     fs: Optional["FileSystem"] = None,
     encoding: str = "utf-8",
     round_trip: bool = False,
+    use_fast_yaml: bool = False,
 ) -> Any:
     open_fn = fs.open if fs else open
     rev = getattr(fs, "rev", None)
@@ -291,7 +294,19 @@ def load(
     try:
         with open_fn(path, encoding=encoding) as fd:  # type: ignore[operator]
             text = fd.read()
-        data = parse_yaml(text, path, typ="rt" if round_trip else "safe")
+
+        if use_fast_yaml and not round_trip:
+            try:
+                data = parse_yaml_fast(text, path)
+            except FastYAMLParseError:
+                try:
+                    data = parse_yaml(text, path, typ="safe")
+                except YAMLFileCorruptedError as exc:
+                    cause = exc.__cause__
+                    relpath = make_relpath(path, fs)
+                    raise YAMLSyntaxError(relpath, text, exc, rev=rev) from cause
+        else:
+            data = parse_yaml(text, path, typ="rt" if round_trip else "safe")
     except UnicodeDecodeError as exc:
         raise EncodingError(path, encoding) from exc
     except YAMLFileCorruptedError as exc:
@@ -301,7 +316,5 @@ def load(
 
     if schema:
         relpath = make_relpath(path, fs)
-        # not returning validated data, as it may remove
-        # details from CommentedMap that we get from roundtrip parser
         validate(data, schema, text=text, path=relpath, rev=rev)
     return data, text

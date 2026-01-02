@@ -78,15 +78,25 @@ class StageCache:
         from voluptuous import Invalid
 
         from dvc.schema import COMPILED_LOCK_FILE_STAGE_SCHEMA
-        from dvc.utils.serialize import YAMLFileCorruptedError, load_yaml
+        from dvc.utils.serialize import (
+            FastYAMLParseError,
+            YAMLFileCorruptedError,
+            load_yaml,
+            load_yaml_fast,
+        )
 
         path = self._get_cache_path(key, value)
+        use_fast_yaml = self.repo.config.get("feature", {}).get("fast_yaml", False)
 
         try:
-            return COMPILED_LOCK_FILE_STAGE_SCHEMA(load_yaml(path))
+            if use_fast_yaml:
+                data = load_yaml_fast(path)
+            else:
+                data = load_yaml(path)
+            return COMPILED_LOCK_FILE_STAGE_SCHEMA(data)
         except FileNotFoundError:
             return None
-        except (YAMLFileCorruptedError, Invalid):
+        except (YAMLFileCorruptedError, FastYAMLParseError, Invalid):
             logger.warning("corrupted cache file '%s'.", relpath(path))
             os.unlink(path)
             return None

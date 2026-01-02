@@ -111,12 +111,14 @@ class ParamsDependency(Dependency):
             return {}
 
         assert self.repo
+        use_fast_yaml = self.repo.config.get("feature", {}).get("fast_yaml", False)
         try:
             return read_param_file(
                 self.repo.fs,
                 self.fs_path,
                 list(self.params) if self.params else None,
                 flatten=flatten,
+                use_fast_yaml=use_fast_yaml,
             )
         except ParseError as exc:
             raise BadParamFileError(f"Unable to read parameters from '{self}'") from exc

@@ -19,8 +19,13 @@ PARSERS.update(
 )
 
 
-def load_path(fs_path, fs, **kwargs):
+def load_path(fs_path, fs, use_fast_yaml=False, **kwargs):
     suffix = fs.suffix(fs_path).lower()
+    if use_fast_yaml and suffix in (".yaml", ".yml"):
+        try:
+            return load_yaml_fast(fs_path, fs=fs)  # noqa: F405
+        except FastYAMLParseError:  # noqa: F405
+            return load_yaml(fs_path, fs=fs, **kwargs)  # noqa: F405
     loader = LOADERS[suffix]
     return loader(fs_path, fs=fs, **kwargs)
 
