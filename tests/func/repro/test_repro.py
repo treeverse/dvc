@@ -1274,6 +1274,34 @@ def test_repro_ignore_errors(mocker, tmp_dir, dvc, copy_script):
     assert stage2_call in spy.call_args_list
 
 
+def test_repro_parallel_jobs(tmp_dir, dvc, copy_script):
+    tmp_dir.dvc_gen({"foo": "foo", "bar": "bar", "baz": "baz"})
+
+    dvc.stage.add(
+        cmd="python copy.py foo out_a", deps=["foo"], outs=["out_a"], name="stage-a"
+    )
+    dvc.stage.add(
+        cmd="python copy.py bar out_b", deps=["bar"], outs=["out_b"], name="stage-b"
+    )
+    dvc.stage.add(
+        cmd="python copy.py baz out_c", deps=["baz"], outs=["out_c"], name="stage-c"
+    )
+    dvc.stage.add(
+        cmd="cat out_a out_b out_c > final",
+        deps=["out_a", "out_b", "out_c"],
+        outs=["final"],
+        name="final",
+    )
+
+    ret = main(["repro", "--jobs", "3"])
+    assert ret == 0
+
+    assert (tmp_dir / "out_a").read_text() == "foo"
+    assert (tmp_dir / "out_b").read_text() == "bar"
+    assert (tmp_dir / "out_c").read_text() == "baz"
+    assert (tmp_dir / "final").read_text() == "foobarbaz"
+
+
 @pytest.mark.parametrize("persist", [True, False])
 def test_repro_external_outputs(tmp_dir, dvc, local_workspace, persist):
     local_workspace.gen("foo", "foo")
