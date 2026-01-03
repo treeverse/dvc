@@ -529,14 +529,23 @@ class MatrixDefinition:
         return self._template
 
     @cached_property
-    def resolved_iterable(self) -> dict[str, list]:
+    def resolved_iterable(self) -> dict[str, Union[list, Mapping]]:
         return self._resolve_matrix_data()
 
-    def _resolve_matrix_data(self) -> dict[str, list]:
+    def _resolve_matrix_data(self) -> dict[str, Union[list, Mapping]]:
         try:
             iterable = self.context.resolve(self.matrix_data, unwrap=False)
         except (ContextError, ParseError) as exc:
             format_and_raise(exc, f"'{self.where}.{self.name}.matrix'", self.relpath)
+
+        for key, value in iterable.items():
+            if not is_map_or_seq(value):
+                node = value.value if isinstance(value, Node) else value
+                typ = type(node).__name__
+                raise ResolveError(
+                    f"failed to resolve '{self.where}.{self.name}.matrix.{key}'"
+                    f" in '{self.relpath}': expected list/dictionary, got {typ}"
+                )
 
         # Matrix entries will have `key` and `item` added to the context.
         # Warn users if these are already in the context from the global vars.
@@ -564,13 +573,27 @@ class MatrixDefinition:
         assert isinstance(iterable, Mapping)
 
         ret: dict[str, DictStrAny] = {}
-        matrix = {key: enumerate(v) for key, v in iterable.items()}
+        matrix = {}
+        for key, value in iterable.items():
+            if isinstance(value, Mapping):
+                # For mappings, use (key, value) pairs.
+                # Key is used for naming, value is used for context.
+                matrix[key] = [(to_str(k), v) for k, v in value.items()]
+            else:
+                # For sequences, use (name, value) pairs.
+                # Name is index-based for complex items, or value-based for simple items
+                items = []
+                for i, v in enumerate(value):
+                    name = f"{key}{i}" if is_map_or_seq(v) else to_str(v)
+                    items.append((name, v))
+                matrix[key] = items
+
         for combination in product(*matrix.values()):
             d: DictStrAny = {}
             fragments: list[str] = []
-            for k, (i, v) in zip(matrix.keys(), combination):
+            for k, (name, v) in zip(matrix.keys(), combination):
                 d[k] = v
-                fragments.append(f"{k}{i}" if is_map_or_seq(v) else to_str(v))
+                fragments.append(name)
 
             key = "-".join(fragments)
             ret[key] = d
