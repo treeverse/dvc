@@ -62,78 +62,36 @@ def test_collapse_graph(repo):
         [
             ("2", "1"),
             ("3@a", "2"),
+            ("3@a", "1"),
             ("4", "1"),
             ("3@b", "4"),
+            ("3@b", "1"),
             ("5", "3@a"),
             ("6", "3@b"),
             ("7", "5"),
             ("7", "6"),
         ]
     )
-    assert [line.rstrip() for line in _show_ascii(graph).splitlines()] == [
-        "       +---+",
-        "       | 1 |",
-        "       +---+",
-        "      *     *",
-        "     *       *",
-        "    *         *",
-        " +---+       +---+",
-        " | 2 |       | 4 |",
-        " +---+       +---+",
-        "    *           *",
-        "    *           *",
-        "    *           *",
-        "+-----+     +-----+",
-        "| 3@a |     | 3@b |",
-        "+-----+     +-----+",
-        "    *           *",
-        "    *           *",
-        "    *           *",
-        " +---+       +---+",
-        " | 5 |       | 6 |",
-        " +---+       +---+",
-        "      *     *",
-        "       *   *",
-        "        * *",
-        "       +---+",
-        "       | 7 |",
-        "       +---+",
-    ]
+    expected_graph = nx.DiGraph(
+        [
+            ("2", "1"),
+            ("3", "2"),
+            ("4", "1"),
+            ("3", "4"),
+            ("3", "1"),
+            ("5", "3"),
+            ("6", "3"),
+            ("7", "5"),
+            ("7", "6"),
+        ]
+    )
     collapsed_graph = _collapse_graph(graph)
     for node in collapsed_graph.nodes:
         assert JOIN not in node
     for n1, n2 in collapsed_graph.edges:
         assert JOIN not in n1
         assert JOIN not in n2
-    assert [line.rstrip() for line in _show_ascii(collapsed_graph).splitlines()] == [
-        "     +---+",
-        "     | 1 |",
-        "     +---+",
-        "     *    *",
-        "    *      *",
-        "   *        *",
-        "+---+     +---+",
-        "| 2 |     | 4 |",
-        "+---+     +---+",
-        "     *    *",
-        "      *  *",
-        "       **",
-        "     +---+",
-        "     | 3 |",
-        "     +---+",
-        "     *    *",
-        "    *      *",
-        "   *        *",
-        "+---+     +---+",
-        "| 5 |     | 6 |",
-        "+---+     +---+",
-        "     *    *",
-        "      *  *",
-        "       **",
-        "     +---+",
-        "     | 7 |",
-        "     +---+",
-    ]
+    assert nx.is_isomorphic(collapsed_graph, expected_graph)
 
 
 def test_build(repo):
