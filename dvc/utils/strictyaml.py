@@ -299,12 +299,7 @@ def load(
             try:
                 data = parse_yaml_fast(text, path)
             except FastYAMLParseError:
-                try:
-                    data = parse_yaml(text, path, typ="safe")
-                except YAMLFileCorruptedError as exc:
-                    cause = exc.__cause__
-                    relpath = make_relpath(path, fs)
-                    raise YAMLSyntaxError(relpath, text, exc, rev=rev) from cause
+                data = parse_yaml(text, path, typ="safe")
         else:
             data = parse_yaml(text, path, typ="rt" if round_trip else "safe")
     except UnicodeDecodeError as exc:
@@ -316,5 +311,7 @@ def load(
 
     if schema:
         relpath = make_relpath(path, fs)
+        # not returning validated data, as it may remove
+        # details from CommentedMap that we get from roundtrip parser
         validate(data, schema, text=text, path=relpath, rev=rev)
     return data, text

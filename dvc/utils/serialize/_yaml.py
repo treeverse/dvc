@@ -1,5 +1,6 @@
 import functools
 import io
+import re
 from collections import OrderedDict
 from contextlib import contextmanager
 from typing import Any, TextIO
@@ -91,8 +92,6 @@ def modify_yaml(path, fs=None):
 
 @functools.cache
 def _get_safe_loader():
-    import re
-
     import yaml
 
     base_loader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)

@@ -420,6 +420,7 @@ class Lockfile(FileMixin):
     def dump_dataset(self, dataset: dict):
         with modify_yaml(self.path, fs=self.repo.fs) as data:
             data.update({"schema": "2.0"})
+            # order is important, meta should always be at the top
             if not data:
                 logger.info("Generating lock file '%s'", self.relpath)
 
@@ -452,6 +453,7 @@ class Lockfile(FileMixin):
 
         if not data:
             data = {"schema": "2.0"}
+            # order is important, meta should always be at the top
             logger.info("Generating lock file '%s'", self.relpath)
 
         data.setdefault("stages", {})
