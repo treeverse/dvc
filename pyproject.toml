@@ -110,7 +110,7 @@ tests = [
     "beautifulsoup4>=4.4",
     "dvc-ssh",
     "filelock",
-    "pytest>=7,<9",
+    "pytest>=7,<10",
     "pytest-rerunfailures<17.0",
     "pytest-cov>=4.1.0",
     "pytest-docker>=1,<4",
