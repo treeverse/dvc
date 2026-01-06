@@ -31,6 +31,12 @@ def run(  # noqa: C901, PLR0912
 
     Returns a dict mapping new experiment SHAs to the results
     of `repro` for that experiment.
+
+    Note: Unlike `dvc repro`, this command supports Hydra configuration
+    composition. When Hydra is enabled in the DVC config, `params.yaml` will
+    be automatically composed from Hydra configs before running the pipeline.
+    This feature is only available with `dvc exp run` and not with `dvc repro`,
+    which is intended for production and CI/CD workflows.
     """
     if kwargs.get("dry"):
         tmp_dir = True

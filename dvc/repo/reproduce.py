@@ -219,6 +219,17 @@ def reproduce(
     on_error: Optional[str] = "fail",
     **kwargs,
 ):
+    """Reproduce complete or partial pipelines by executing their stages.
+
+    This is the core reproduction logic used by `dvc repro`. It is intended
+    for production and CI/CD workflows where you want to reproduce pipelines
+    with stable, committed parameters.
+
+    Note: This function does not support Hydra configuration composition.
+    For experimentation with Hydra configs, use `dvc exp run` instead, which
+    automatically composes `params.yaml` from Hydra configurations before
+    running the pipeline.
+    """
     from dvc.dvcfile import PROJECT_FILE
 
     if all_pipelines or pipeline:

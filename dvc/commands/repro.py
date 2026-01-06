@@ -156,7 +156,13 @@ and then the stage name name.
 
 
 def add_parser(subparsers, parent_parser):
-    REPRO_HELP = "Reproduce complete or partial pipelines by executing their stages."
+    REPRO_HELP = """Reproduce complete or partial pipelines by executing their stages.
+
+    Note: This command is intended for production and CI/CD workflows. For
+    experimentation with Hydra configuration composition, use `dvc exp run`
+    instead. Hydra composition (automatic `params.yaml` generation from Hydra
+    configs) is only supported with `dvc exp run`, not with `dvc repro`.
+    """
     repro_parser = subparsers.add_parser(
         "repro",
         parents=[parent_parser],
