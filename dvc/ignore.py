@@ -5,7 +5,7 @@ from collections.abc import Iterable, Iterator
 from itertools import chain, groupby, takewhile
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Optional, Union, overload
 
-from pathspec.patterns import GitWildMatchPattern
+from pathspec.patterns.gitignore.spec import GitIgnoreSpecPattern
 from pathspec.util import normalize_file
 from pygtrie import Trie
 
@@ -34,7 +34,7 @@ class DvcIgnorePatterns(DvcIgnore):
     def __init__(
         self, pattern_list: Iterable[Union[PatternInfo, str]], dirname: str, sep: str
     ) -> None:
-        from pathspec.patterns.gitwildmatch import _DIR_MARK
+        from pathspec.patterns.gitignore.spec import _DIR_MARK
 
         pattern_infos = [
             pattern if isinstance(pattern, PatternInfo) else PatternInfo(pattern, "")
@@ -48,7 +48,7 @@ class DvcIgnorePatterns(DvcIgnore):
 
         regex_pattern_list: list[tuple[str, bool, bool, PatternInfo]] = []
         for count, pattern_info in enumerate(pattern_infos):
-            regex, ignore = GitWildMatchPattern.pattern_to_regex(pattern_info.patterns)
+            regex, ignore = GitIgnoreSpecPattern.pattern_to_regex(pattern_info.patterns)
             if regex is not None and ignore is not None:
                 self.pattern_list.append(pattern_info)
                 regex = regex.replace(f"<{_DIR_MARK}>", f"<{_DIR_MARK}{count}>")
