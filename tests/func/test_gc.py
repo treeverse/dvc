@@ -437,8 +437,16 @@ def test_gc_logging(caplog, dvc, good_and_bad_cache):
     with caplog.at_level(logging.INFO, logger="dvc"):
         dvc.gc(workspace=True)
 
-    assert "Removed 3 objects from repo cache." in caplog.text
-    assert "No unused 'local' cache to remove." in caplog.text
+    # Check that 3 objects were removed from either repo or local cache
+    # (they point to the same ODB, so only one will be logged due to deduplication)
+    has_repo_log = "Removed 3 objects from repo cache." in caplog.text
+    has_local_log = "Removed 3 objects from local cache." in caplog.text
+
+    # Exactly one of repo or local should have the log, not both (deduplication)
+    assert has_repo_log ^ has_local_log, (
+        "Should have exactly one log for repo/local cache"
+    )
+
     assert "No unused 'legacy' cache to remove." in caplog.text
 
 
@@ -450,3 +458,21 @@ def test_gc_skip_failed(tmp_dir, dvc):
         dvc.gc(force=True, workspace=True)
 
     dvc.gc(force=True, workspace=True, skip_failed=True)
+
+
+def test_gc_dry_logs_paths(caplog, tmp_dir, dvc):
+    """Test that dry run logs paths of objects to be removed."""
+    odb = dvc.cache.local
+
+    # Add some unused objects directly to cache
+    unused_hashes = ["test123", "test456", "test789"]
+    for hash_val in unused_hashes:
+        odb.add_bytes(hash_val, hash_val.encode("utf8"))
+
+    with caplog.at_level(logging.INFO, logger="dvc_data.hashfile.gc"):
+        dvc.gc(workspace=True, dry=True)
+
+    # Verify that paths are logged by dvc-data layer
+    for hash_val in unused_hashes:
+        expected_path = odb.oid_to_path(hash_val)
+        assert f"Removing {expected_path}" in caplog.text

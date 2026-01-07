@@ -128,9 +128,11 @@ def gc(  # noqa: C901, PLR0912, PLR0913
         used_obj_ids = set()
         used_obj_ids.update(*odb_to_obj_ids.values())
 
+    seen_odbs = set()
     for scheme, odb in self.cache.by_scheme():
-        if not odb:
+        if not odb or odb in seen_odbs:
             continue
+        seen_odbs.add(odb)
         num_removed = ogc(odb, used_obj_ids, jobs=jobs, dry=dry)
         if num_removed:
             logger.info("Removed %d objects from %s cache.", num_removed, scheme)
