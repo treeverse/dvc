@@ -1,5 +1,5 @@
 from collections.abc import Iterable, Mapping
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 if TYPE_CHECKING:
     import builtins
@@ -68,8 +68,37 @@ class attrs:  # noqa: N801, PLW1641
         return all(getattr(other, name) == v for name, v in self.attribs.items())
 
 
+class instance_of:  # noqa: N801, PLW1641
+    def __init__(self, expected_type: Union[Any, tuple[Any, ...]]) -> None:
+        self.expected_type = expected_type
+
+    def __repr__(self) -> str:
+        if isinstance(self.expected_type, tuple):
+            inner = f"({', '.join(t.__name__ for t in self.expected_type)})"
+        else:
+            inner = self.expected_type.__name__
+        return f"{self.__class__.__name__}({inner})"
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, self.expected_type)
+
+
+class any_of:  # noqa: N801, PLW1641
+    def __init__(self, *items: Any) -> None:
+        self.items = sorted(items)
+
+    def __repr__(self) -> str:
+        inner = ", ".join(map(repr, self.items))
+        return f"any_of({inner})"
+
+    def __eq__(self, other: object) -> bool:
+        return other in self.items
+
+
 __all__ = [
+    "any_of",
     "attrs",
     "dict",
+    "instance_of",
     "unordered",
 ]

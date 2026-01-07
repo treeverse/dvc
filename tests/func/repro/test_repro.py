@@ -15,6 +15,7 @@ from dvc.output import Output
 from dvc.stage import PipelineStage, Stage
 from dvc.stage.cache import RunCacheNotSupported
 from dvc.stage.exceptions import StageFileDoesNotExistError, StageNotFound
+from dvc.testing import matchers as M
 from dvc.utils.fs import remove
 from dvc.utils.serialize import modify_yaml
 from dvc_data.hashfile.hash import file_md5
@@ -55,7 +56,7 @@ def test_repro_frozen(tmp_dir, dvc, run_copy):
     assert stages == [data_stage, stage0]
 
 
-def test_downstream(M, tmp_dir, dvc):
+def test_downstream(tmp_dir, dvc):
     # The dependency graph should look like this:
     #
     #       E

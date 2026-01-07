@@ -577,7 +577,7 @@ def test_root_from_file_to_dir(tmp_dir, dvc, scm):
     }
 
 
-def test_empty_dir(tmp_dir, scm, dvc, M):
+def test_empty_dir(tmp_dir, scm, dvc):
     # regression testing for https://github.com/treeverse/dvc/issues/8958
     tmp_dir.dvc_gen({"data": {"foo": "foo"}})
     remove("data")

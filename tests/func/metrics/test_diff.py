@@ -4,6 +4,7 @@ from os.path import join
 import pytest
 
 from dvc.cli import main
+from dvc.testing import matchers as M
 from dvc.utils import relpath
 from dvc.utils.serialize import JSONFileCorruptedError
 
@@ -95,7 +96,7 @@ def test_metrics_diff_json_unchanged(tmp_dir, scm, dvc, run_copy_metrics):
     assert dvc.metrics.diff(a_rev="HEAD~2") == {}
 
 
-def test_metrics_diff_broken_json(M, tmp_dir, scm, dvc, run_copy_metrics):
+def test_metrics_diff_broken_json(tmp_dir, scm, dvc, run_copy_metrics):
     metrics = {"a": {"b": {"c": 1, "d": 1, "e": "3"}}}
     (tmp_dir / "m_temp.json").dump(metrics)
     run_copy_metrics(
@@ -143,7 +144,7 @@ def test_metrics_diff_new_metric(tmp_dir, scm, dvc, run_copy_metrics):
     }
 
 
-def test_metrics_diff_deleted_metric(M, tmp_dir, scm, dvc, run_copy_metrics):
+def test_metrics_diff_deleted_metric(tmp_dir, scm, dvc, run_copy_metrics):
     metrics = {"a": {"b": {"c": 1, "d": 1, "e": "3"}}}
     (tmp_dir / "m_temp.json").dump(metrics)
     run_copy_metrics(

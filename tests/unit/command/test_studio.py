@@ -7,9 +7,9 @@ from dvc_studio_client.auth import AuthorizationExpiredError
 
 
 @pytest.fixture(autouse=True)
-def global_config_dir(monkeypatch, tmp_dir_factory):
+def global_config_dir(monkeypatch, tmp_path_factory):
     monkeypatch.setenv(
-        env.DVC_GLOBAL_CONFIG_DIR, str(tmp_dir_factory.mktemp("studio-login"))
+        env.DVC_GLOBAL_CONFIG_DIR, str(tmp_path_factory.mktemp("studio-login"))
     )
 
 
