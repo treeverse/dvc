@@ -1,4 +1,5 @@
 import argparse
+
 from dvc.cli.command import CmdBase
 from dvc.repo.logs import show_logs
 
@@ -12,7 +13,9 @@ def add_parser(subparsers, parent_parser):
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--internal", action="store_true", help="Show only internal (repo) push history instead of global history"
+        "--internal",
+        action="store_true",
+        help="Show only internal (repo) push history instead of global history",
     )
     parser.set_defaults(func=CmdExpList)
     return parser

@@ -1,6 +1,7 @@
 import argparse
+
 from dvc.cli.command import CmdBase
-from dvc.repo.logs import show_logs
+
 
 def add_parser(subparsers, parent_parser):
     parser = subparsers.add_parser(
@@ -15,13 +16,20 @@ def add_parser(subparsers, parent_parser):
     parser.set_defaults(func=CmdTag)
     return parser
 
+
 class CmdTag(CmdBase):
     def run(self):
         name = self.args.name
         commit = self.args.commit
-        from dvc.repo.logs import _load_history, _save_history,_save_global_history, _load_local_history
+        from dvc.repo.logs import (
+            _load_history,
+            _load_local_history,
+            _save_global_history,
+            _save_history,
+        )
+
         history = _load_history()
-        
+
         found = False
         for entry in history:
             if entry.get("commit", "").startswith(commit):
@@ -55,6 +63,5 @@ class CmdTag(CmdBase):
             print(f"Tag '{name}' added to commit {commit}.")
         else:
             print(f"Commit {commit} not found.")
-
 
         return 0

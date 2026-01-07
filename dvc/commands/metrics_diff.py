@@ -1,6 +1,8 @@
 import argparse
+
 from dvc.cli.command import CmdBase
 from dvc.repo.logs import show_logs
+
 
 def add_parser(subparsers, parent_parser):
     parser = subparsers.add_parser(
@@ -13,10 +15,13 @@ def add_parser(subparsers, parent_parser):
     parser.add_argument("commit1", type=str, help="First commit hash")
     parser.add_argument("commit2", type=str, help="Second commit hash")
     parser.add_argument(
-        "--internal", action="store_true", help="Show only internal (repo) push history instead of global history"
+        "--internal",
+        action="store_true",
+        help="Show only internal (repo) push history instead of global history",
     )
     parser.set_defaults(func=CmdMetricsDiff)
     return parser
+
 
 class CmdMetricsDiff(CmdBase):
     def run(self):
@@ -40,7 +45,7 @@ class CmdMetricsDiff(CmdBase):
         print(f"Metrics diff between {commit1} and {commit2}:")
         all_keys = set(m1.keys()) | set(m2.keys())
         for k in all_keys:
-            v1 = m1.get(k, None)
-            v2 = m2.get(k, None)
+            v1 = m1.get(k)
+            v2 = m2.get(k)
             print(f"  {k}: {v1} -> {v2}")
         return 0

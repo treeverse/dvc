@@ -1,19 +1,20 @@
 # dvc/repo/logs.py
-import os
 import json
+import os
 import subprocess
 from datetime import datetime
+
 from dvc.utils import relpath
 
-
-
 HISTORY_FILE = ".dvc/push_history.json"  # Internal, versioned
+
 
 def get_global_history_file():
     config_path = os.path.expanduser("~/.dvc_enhance_config.json")
     if os.path.exists(config_path):
         import json
-        with open(config_path, "r") as f:
+
+        with open(config_path) as f:
             cfg = json.load(f)
         if "global_log_path" in cfg:
             return os.path.expanduser(cfg["global_log_path"])
@@ -24,7 +25,6 @@ def _run(cmd: str) -> str:
     return subprocess.check_output(cmd, shell=True, text=True).strip()
 
 
-
 def _ensure_history_file(path):
     os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
     if not os.path.exists(path):
@@ -32,19 +32,19 @@ def _ensure_history_file(path):
             json.dump([], f)
 
 
-
-
 def _load_history(path=None):
     if path is None:
         path = get_global_history_file()
     _ensure_history_file(path)
-    with open(path, "r") as f:
+    with open(path) as f:
         return json.load(f)
+
 
 def _load_local_history(path=HISTORY_FILE):
     _ensure_history_file(path)
-    with open(path, "r") as f:
+    with open(path) as f:
         return json.load(f)
+
 
 def _save_history(history, path=HISTORY_FILE):
     with open(path, "w") as f:
@@ -57,6 +57,7 @@ def _save_global_history(history, path=None):
     with open(path, "w") as f:
         json.dump(history, f, indent=2)
 
+
 def add_push_entry(repo, outs, experiment_name=None, metrics=None, tags=None):
     commit = _run("git rev-parse HEAD")
     message = _run("git log -1 --pretty=%s")
@@ -64,12 +65,11 @@ def add_push_entry(repo, outs, experiment_name=None, metrics=None, tags=None):
     commit_date = _run("git log -1 --pretty=%ad --date=iso")
     push_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-
-
     # Auto-capture experiment_name from params.yaml if present, else from branch name
     if not experiment_name:
         try:
             import yaml
+
             with open("params.yaml") as f:
                 params = yaml.safe_load(f)
             experiment_name = params.get("experiment") or params.get("exp_name")
@@ -82,12 +82,15 @@ def add_push_entry(repo, outs, experiment_name=None, metrics=None, tags=None):
         except Exception:
             experiment_name = ""
     if not experiment_name:
-        print("[DVC] WARNING: experiment_name is missing. Set 'experiment' in params.yaml for better tracking.")
+        print(
+            "[DVC] WARNING: experiment_name is missing. Set 'experiment' in params.yaml for better tracking."
+        )
 
     # Auto-capture metrics from metrics.json if present
     if not metrics:
         try:
             import json
+
             with open("metrics.json") as f:
                 metrics = json.load(f)
             if not isinstance(metrics, dict):
@@ -99,12 +102,13 @@ def add_push_entry(repo, outs, experiment_name=None, metrics=None, tags=None):
     if not tags or not isinstance(tags, list):
         tags = []
 
-    import os
     import hashlib
+    import os
+
     def compute_size_nfiles(path):
         if os.path.isfile(path):
             return os.path.getsize(path), 1, {os.path.relpath(path): _file_md5(path)}
-        elif os.path.isdir(path):
+        if os.path.isdir(path):
             total_size = 0
             total_files = 0
             file_md5s = {}
@@ -159,7 +163,11 @@ def add_push_entry(repo, outs, experiment_name=None, metrics=None, tags=None):
 
         # Compute changed files (added/removed/modified)
         prev = prev_artifacts.get(repo_path, {})
-        prev_file_md5s = prev.get("file_md5s", {}) if isinstance(prev.get("file_md5s", {}), dict) else {}
+        prev_file_md5s = (
+            prev.get("file_md5s", {})
+            if isinstance(prev.get("file_md5s", {}), dict)
+            else {}
+        )
         added = []
         removed = []
         modified = []
@@ -179,12 +187,19 @@ def add_push_entry(repo, outs, experiment_name=None, metrics=None, tags=None):
                 "size": size if size is not None else "",
                 "nfiles": nfiles if nfiles is not None else "",
                 "s3_path": s3_path,
-                "changed_files_count": {"added": len(added), "removed": len(removed), "modified": len(modified)},
-                "changed_files": {"added": added, "removed": removed, "modified": modified},
+                "changed_files_count": {
+                    "added": len(added),
+                    "removed": len(removed),
+                    "modified": len(modified),
+                },
+                "changed_files": {
+                    "added": added,
+                    "removed": removed,
+                    "modified": modified,
+                },
                 "file_md5s": file_md5s,
             }
         )
-
 
     new_entry = {
         "commit": commit or "",
@@ -207,7 +222,6 @@ def add_push_entry(repo, outs, experiment_name=None, metrics=None, tags=None):
     _save_global_history(global_history)
 
 
-
 def show_logs(global_history=True):
     """
     By default, show logs from the global (external) file for full history.
@@ -215,5 +229,4 @@ def show_logs(global_history=True):
     """
     if global_history:
         return _load_history()  # uses configured path
-    else:
-        return _load_history(HISTORY_FILE)
+    return _load_history(HISTORY_FILE)
