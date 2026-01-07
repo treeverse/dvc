@@ -1,9 +1,10 @@
 from dvc.cli import parse_args
 from dvc.commands.get_url import CmdGetUrl
 from dvc.config import Config
+from dvc.testing import matchers as M
 
 
-def test_get_url(mocker, M):
+def test_get_url(mocker):
     cli_args = parse_args(["get-url", "src", "out", "-j", "5"])
     assert cli_args.func == CmdGetUrl
 

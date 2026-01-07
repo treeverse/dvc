@@ -18,7 +18,7 @@ keywords = [
 ]
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-maintainers = [{ name = "Iterative", email = "support@dvc.org" }]
+maintainers = [{ name = "Treeverse", email = "support@dvc.org" }]
 authors = [{ name = "Dmitry Petrov", email = "dmitry@dvc.org" }]
 requires-python = ">=3.9"
 classifiers = [
@@ -29,6 +29,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dynamic = ["version"]
 
@@ -40,14 +41,14 @@ dependencies = [
     "distro>=1.3",
     "dpath<3,>=2.1.0",
     "dulwich",
-    "dvc-data>=3.16.2,<3.17",
+    "dvc-data>=3.17.0,<3.18",
     "dvc-http>=2.29.0",
     "dvc-objects",
     "dvc-render>=1.0.1,<2",
     "dvc-studio-client>=0.21,<1",
     "dvc-task>=0.3.0,<1",
-    "flatten_dict<1,>=0.4.1",
-    "flufl.lock>=8.1.0,<9",
+    "flatten-dict<1,>=0.4.1",
+    "flufl.lock>=8.1.0,<10",
     "fsspec>=2024.2.0",
     "funcy>=1.14",
     "grandalf<1,>=0.7",
@@ -58,7 +59,7 @@ dependencies = [
     "networkx>=2.5",
     "omegaconf",
     "packaging>=19",
-    "pathspec>=0.10.3",
+    "pathspec>=0.10.3,<1",
     "platformdirs<5,>=3.1.1",
     "psutil>=5.8",
     "pydot>=1.2.4",
@@ -85,7 +86,7 @@ gdrive = ["dvc-gdrive>=3,<4"]
 gs = ["dvc-gs>=3.0.2,<4"]
 hdfs = ["dvc-hdfs>=3,<4"]
 lint = [
-    "mypy==1.18.1",
+    "mypy==1.19.1",
     "pandas-stubs",
     "types-colorama",
     "types-psutil",
@@ -102,7 +103,6 @@ ssh = ["dvc-ssh>=4,<5"]
 ssh_gssapi = ["dvc-ssh[gssapi]>=4,<5"]
 testing = [
   "pytest-benchmark[histogram]>=5,<6",
-  "pytest-test-utils",
   "uv",
 ]
 tests = [
@@ -110,12 +110,11 @@ tests = [
     "beautifulsoup4>=4.4",
     "dvc-ssh",
     "filelock",
-    "pytest>=7,<9",
-    "pytest-rerunfailures<16.0",
+    "pytest>=7,<10",
+    "pytest-rerunfailures<17.0",
     "pytest-cov>=4.1.0",
     "pytest-docker>=1,<4",
     "pytest-mock",
-    "pytest-test-utils",
     "pytest-timeout>=2",
     "pytest-xdist>=3.2",
     'pywin32>=225; sys_platform == "win32"', # optional test dependency
@@ -123,14 +122,14 @@ tests = [
     "sqlalchemy>=1,<3", # optional dependency for `import-db`
     "pandas>=1", # optional dependency for `import-db`
 ]
-webdav = ["dvc-webdav>=3,<4"]
+webdav = ["dvc-webdav>=3.0.1,<4"]
 webhdfs = ["dvc-webhdfs>=3.1,<4"]
 webhdfs_kerberos = ["dvc-webhdfs[kerberos]>=3.1,<4"]
 
 [project.urls]
 Documentation = "https://dvc.org/doc"
-Issues = "https://github.com/iterative/dvc/issues"
-Source = "https://github.com/iterative/dvc"
+Issues = "https://github.com/treeverse/dvc/issues"
+Source = "https://github.com/treeverse/dvc"
 
 [project.scripts]
 dvc = "dvc.cli:main"
@@ -248,7 +247,6 @@ module = [
     "shortuuid",
     "shtab",
     "upath",
-    "virtualenv",
     "viztracer",
     "voluptuous",
     "yappi",
@@ -265,8 +263,16 @@ show-fixes = true
 
 [tool.ruff.lint]
 ignore = [
-    "N818", "S101", "A005", "PT007", "RET502", "RET503", "SIM105", "SIM108", "SIM117",
-    "TRY003", "TRY300", "PERF203", "PLC0415", "PLR2004",  "PLW2901", "LOG007",
+    "PERF203", # try-except-in-loop
+    "PLC0415",  # import-outside-top-level
+    "PLR2004", # magic-value-comparison
+    "PLW2901", # redefined-loop-name
+    "S101", # assert
+    "SIM105", # suppressible-exception
+    "SIM108",  # if-else-block-instead-of-if-exp
+    "SIM117", # multiple-with-statements
+    "TRY003", # raise-vanilla-args
+    "TRY300", # try-consider-else
 ]
 select = [
     "F", "E", "W", "C90", "I", "N", "UP", "YTT", "ASYNC", "S", "BLE", "B", "A", "C4", "DTZ", "T10",
@@ -304,4 +310,4 @@ max-args = 10
 "dvc/commands/**" = ["N806"]
 "dvc/testing/**" = ["ARG002"]
 "dvc/testing/benchmarks/**" = ["ARG001"]
-"tests/**" = ["S", "ARG001", "ARG002", "TRY002", "TRY301", "PERF"]
+"tests/**" = ["S", "ARG001", "ARG002", "TRY002", "TRY301", "PERF", "PLR2004"]

@@ -91,7 +91,7 @@ def test_apply_untracked(tmp_dir, scm, dvc, exp_stage):
 
 
 def test_apply_unchanged_head(tmp_dir, scm, dvc, exp_stage):
-    # see https://github.com/iterative/dvc/issues/8764
+    # see https://github.com/treeverse/dvc/issues/8764
     tmp_dir.gen("params.yaml", "foo: 2")
     scm.add(["dvc.yaml", "dvc.lock", "params.yaml", "metrics.yaml"])
     scm.commit("commit foo=2")

@@ -1,8 +1,6 @@
 """Manages logging configuration for DVC repo."""
 
 import logging
-import logging.config
-import logging.handlers
 import os
 import sys
 from collections.abc import Iterator
@@ -55,7 +53,7 @@ def add_logging_level(level_name, level_num, method_name=None):
         setattr(logging, method_name, log_to_root)
 
 
-class LoggingException(Exception):
+class LoggingException(Exception):  # noqa: N818
     def __init__(self, record):
         msg = f"failed to log {record!s}"
         super().__init__(msg)

@@ -1,6 +1,6 @@
 import os
 import posixpath
-from collections import defaultdict
+from collections import defaultdict, deque
 from collections.abc import Iterable, Iterator, Mapping
 from typing import TYPE_CHECKING, Optional, TypedDict, Union
 
@@ -385,6 +385,26 @@ def _transform_git_paths_to_dvc(repo: "Repo", files: Iterable[str]) -> list[str]
     return [repo.fs.relpath(file, start) for file in files]
 
 
+def iter_index(
+    index: Union["BaseDataIndex", "DataIndexView"], shallow: bool = False
+) -> Iterator[tuple["DataIndexKey", Optional["DataIndexEntry"]]]:
+    if not shallow:
+        yield from index.iteritems(shallow=shallow)
+        return
+
+    # only iterate until we find entries with hash_info in shallow mode
+    todo: deque[tuple[DataIndexKey, dict]] = deque([((), index.info(()))])
+    while todo:
+        key, info = todo.popleft()
+        entry = info.get("entry")
+        if info.get("type") == "directory" and not (entry and entry.hash_info):
+            try:
+                todo.extend(index.ls(key, detail=True))
+            except (KeyError, DataIndexDirError):
+                pass
+        yield key, entry
+
+
 def _get_entries_not_in_remote(
     repo: "Repo",
     filter_keys: Optional[Iterable["DataIndexKey"]] = None,
@@ -418,7 +438,7 @@ def _get_entries_not_in_remote(
 
     n = 0
     with TqdmCallback(size=n, desc="Checking remote", unit="entry") as cb:
-        for key, entry in view.iteritems(shallow=not granular):
+        for key, entry in iter_index(view, shallow=not granular):
             if not (entry and entry.hash_info):
                 continue
 
@@ -436,15 +456,17 @@ def _get_entries_not_in_remote(
             n += 1
             cb.set_size(n)
 
+        results = storage_map.bulk_remote_exists(
+            list(entries.values()), refresh=remote_refresh, callback=cb
+        )
         for key, entry in entries.items():
             k = (*key, "") if entry.meta and entry.meta.isdir else key
             try:
-                if not storage_map.remote_exists(entry, refresh=remote_refresh):
+                if not results.get(entry, False):
                     missing_entries.append(os.path.sep.join(k))
             except StorageKeyError:
                 pass
-            finally:
-                cb.relative_update()
+
     data_index.onerror = orig_data_index_onerror
     return missing_entries
 

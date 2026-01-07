@@ -2,6 +2,7 @@ import pytest
 
 from dvc import api
 from dvc.api import DVCFileSystem
+from dvc.testing import matchers as M
 from dvc.utils.fs import remove
 
 
@@ -42,7 +43,6 @@ class TestAPI:
     )
     def test_filesystem(
         self,
-        M,
         tmp_dir,
         make_tmp_dir,
         scm,

@@ -44,7 +44,7 @@ class TestRemote:
         _check_status(status_dir, new=dir_hashes)
 
         # Move cache and check status
-        # See issue https://github.com/iterative/dvc/issues/4383 for details
+        # See issue https://github.com/treeverse/dvc/issues/4383 for details
         backup_dir = dvc.cache.local.path + ".backup"
         shutil.move(dvc.cache.local.path, backup_dir)
         status = dvc.cloud.status(foo_hashes)
@@ -116,7 +116,7 @@ class TestRemote:
 
     @pytest.mark.xfail(raises=NotImplementedError, strict=False)
     def test_pull_00_prefix(self, tmp_dir, dvc, remote, monkeypatch):
-        # Related: https://github.com/iterative/dvc/issues/6089
+        # Related: https://github.com/treeverse/dvc/issues/6089
 
         fs_type = type(dvc.cloud.get_remote_odb("upstream").fs)
         monkeypatch.setattr(fs_type, "_ALWAYS_TRAVERSE", True, raising=False)
@@ -146,7 +146,7 @@ class TestRemote:
 
     @pytest.mark.xfail(raises=NotImplementedError, strict=False)
     def test_pull_no_00_prefix(self, tmp_dir, dvc, remote, monkeypatch):
-        # Related: https://github.com/iterative/dvc/issues/6244
+        # Related: https://github.com/treeverse/dvc/issues/6244
 
         fs_type = type(dvc.cloud.get_remote_odb("upstream").fs)
         monkeypatch.setattr(fs_type, "_ALWAYS_TRAVERSE", True, raising=False)

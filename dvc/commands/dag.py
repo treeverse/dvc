@@ -127,19 +127,80 @@ def _filter(graph, targets, full):
     return new_graph
 
 
-def _build(repo, target=None, full=False, outs=False):
+def _is_foreach_matrix_stage(node, join_string):
+    if node.endswith(".dvc"):
+        return False
+    return join_string in node
+
+
+def _collapse_foreach_matrix_get_nodes(graph):
+    from dvc.parsing import JOIN
+
+    new_nodes = set()
+    nodes_to_remove = set()
+    for _node in list(graph.nodes):
+        if not _is_foreach_matrix_stage(_node, JOIN):
+            continue
+        nodes_to_remove.add(_node)
+        new_nodes.add(_node.split(JOIN)[0])
+    return new_nodes, nodes_to_remove
+
+
+def _collapse_foreach_matrix_get_edges(graph):
+    from dvc.parsing import JOIN
+
+    new_edges = set()
+    edges_to_remove = set()
+    for _e1, _e2 in list(graph.edges):
+        _replace = False
+        _new_e1 = _e1
+        _new_e2 = _e2
+        if _is_foreach_matrix_stage(_e1, JOIN):
+            _new_e1 = _e1.split(JOIN)[0]
+            _replace = True
+        if _is_foreach_matrix_stage(_e2, JOIN):
+            _new_e2 = _e2.split(JOIN)[0]
+            _replace = True
+        if _replace:
+            edges_to_remove.add((_e1, _e2))
+            new_edges.add((_new_e1, _new_e2))
+    return new_edges, edges_to_remove
+
+
+def _collapse_foreach_matrix(graph):
+    new_nodes, nodes_to_remove = _collapse_foreach_matrix_get_nodes(graph)
+    new_edges, edges_to_remove = _collapse_foreach_matrix_get_edges(graph)
+    new_graph = graph.copy()
+    new_graph.remove_edges_from(edges_to_remove)
+    new_graph.add_nodes_from(new_nodes)
+    new_graph.add_edges_from(new_edges)
+    new_graph.remove_nodes_from(nodes_to_remove)
+    return new_graph
+
+
+def _build(repo, target=None, full=False, outs=False, collapse_foreach_matrix=False):
     targets = _collect_targets(repo, target, outs)
     graph = _transform(repo.index, outs)
-    return _filter(graph, targets, full)
+    filtered_graph = _filter(graph, targets, full)
+    if collapse_foreach_matrix:
+        filtered_graph = _collapse_foreach_matrix(filtered_graph)
+    return filtered_graph
 
 
 class CmdDAG(CmdBase):
     def run(self):
+        from dvc.exceptions import InvalidArgumentError
+
+        if self.args.outs and self.args.collapse_foreach_matrix:
+            raise InvalidArgumentError(
+                "`--outs` and `--collapse-foreach-matrix` are mutually exclusive"
+            )
         graph = _build(
             self.repo,
             target=self.args.target,
             full=self.args.full,
             outs=self.args.outs,
+            collapse_foreach_matrix=self.args.collapse_foreach_matrix,
         )
 
         if self.args.dot:
@@ -180,6 +241,14 @@ def add_parser(subparsers, parent_parser):
         default=False,
         dest="markdown",
         help="Print DAG with mermaid format wrapped in Markdown block.",
+    )
+    dag_parser.add_argument(
+        "--collapse-foreach-matrix",
+        action="store_true",
+        default=False,
+        help=(
+            "Collapse stages from each foreach/matrix definition into a single node."
+        ),
     )
     dag_parser.add_argument(
         "--full",

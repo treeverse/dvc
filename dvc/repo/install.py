@@ -16,7 +16,7 @@ def pre_commit_install(scm: "Git") -> None:
     config_path = os.path.join(scm.root_dir, ".pre-commit-config.yaml")
     with modify_yaml(config_path) as config:
         entry = {
-            "repo": "https://github.com/iterative/dvc",
+            "repo": "https://github.com/treeverse/dvc",
             "rev": ".".join(map(str, version_tuple[:3])),
             "hooks": [
                 {
@@ -75,7 +75,7 @@ def install(self: "Repo", use_pre_commit_tool: bool = False) -> None:
 
     scm = self.scm
     if not isinstance(scm, Git):
-        return
+        return None
 
     driver = "dvc git-hook merge-driver --ancestor %O --our %A --their %B "
     scm.install_merge_driver("dvc", "DVC merge driver", driver)

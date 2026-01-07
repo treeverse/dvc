@@ -88,8 +88,8 @@ def test_config_set_in_non_dvc_repo(tmp_dir, caplog):
     [
         (["core.analytics"], 0, "False"),
         (["core.remote"], 0, "myremote"),
-        (["remote.myremote.profile"], 0, "iterative"),
-        (["remote.myremote.profile", "--local"], 0, "iterative"),
+        (["remote.myremote.profile"], 0, "treeverse"),
+        (["remote.myremote.profile", "--local"], 0, "treeverse"),
         (
             ["remote.myremote.profile", "--project"],
             251,
@@ -122,7 +122,7 @@ def test_config_get(tmp_dir, dvc, capsys, caplog, args, ret, msg):
         textwrap.dedent(
             """\
         ['remote "myremote"']
-            profile = iterative
+            profile = treeverse
         ['remote "other"']
             url = gs://bucket/path
         """
@@ -167,7 +167,7 @@ def test_config_list(tmp_dir, dvc, capsys):
         textwrap.dedent(
             """\
         ['remote "myremote"']
-            profile = iterative
+            profile = treeverse
             access_key_id = abcde
             secret_access_key = 123456
         ['remote "other"']
@@ -181,7 +181,7 @@ def test_config_list(tmp_dir, dvc, capsys):
     out, _ = capsys.readouterr()
     assert "remote.myremote.url=s3://bucket/path" in out
     assert "remote.myremote.region=us-east-2" in out
-    assert "remote.myremote.profile=iterative" in out
+    assert "remote.myremote.profile=treeverse" in out
     assert "remote.myremote.access_key_id=abcde" in out
     assert "remote.myremote.secret_access_key=123456" in out
     assert "remote.other.url=gs://bucket/path" in out
@@ -242,7 +242,7 @@ def test_merging_two_levels(dvc):
 
 
 def test_config_loads_without_error_for_non_dvc_repo(tmp_dir):
-    # regression testing for https://github.com/iterative/dvc/issues/3328
+    # regression testing for https://github.com/treeverse/dvc/issues/3328
     Config.from_cwd(validate=True)
 
 

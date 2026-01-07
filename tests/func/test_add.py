@@ -723,7 +723,7 @@ def test_add_symlink_file(tmp_dir, dvc):
     ).is_symlink()
 
     # Test that subsequent add succeeds
-    # See https://github.com/iterative/dvc/issues/4654
+    # See https://github.com/treeverse/dvc/issues/4654
     dvc.add(os.path.join("dir", "foo"))
 
 

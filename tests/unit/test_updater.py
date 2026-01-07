@@ -158,14 +158,14 @@ def test_check(mocker, updater):
             None,
             (
                 "Find the latest release at "
-                "https://github.com/iterative/dvc/releases/latest."
+                "https://github.com/treeverse/dvc/releases/latest."
             ),
         ),
         (
             "unknown",
             (
                 "Find the latest release at "
-                "https://github.com/iterative/dvc/releases/latest."
+                "https://github.com/treeverse/dvc/releases/latest."
             ),
         ),
     ],

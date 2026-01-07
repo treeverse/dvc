@@ -160,7 +160,7 @@ def test_non_cached_output(tmp_dir, erepo_dir):
     assert (tmp_dir / dst).read_text().strip() == "hello"
 
 
-# https://github.com/iterative/dvc/pull/2837#discussion_r352123053
+# https://github.com/treeverse/dvc/pull/2837#discussion_r352123053
 def test_absolute_file_outside_repo(tmp_dir, erepo_dir):
     with pytest.raises(FileNotFoundError):
         Repo.get(os.fspath(erepo_dir), "/root/")

@@ -2,7 +2,15 @@ import networkx as nx
 import pytest
 
 from dvc.cli import main, parse_args
-from dvc.commands.dag import CmdDAG, _build, _show_ascii, _show_dot, _show_mermaid
+from dvc.commands.dag import (
+    CmdDAG,
+    _build,
+    _collapse_foreach_matrix,
+    _show_ascii,
+    _show_dot,
+    _show_mermaid,
+)
+from dvc.parsing import JOIN
 
 
 @pytest.mark.parametrize(
@@ -49,8 +57,51 @@ def repo(tmp_dir, dvc):
     return dvc
 
 
+def test_collapse_foreach_matrix(repo):
+    graph = nx.DiGraph(
+        [
+            ("2", "1"),
+            ("3@a", "2"),
+            ("3@a", "1"),
+            ("4", "1"),
+            ("3@b", "4"),
+            ("3@b", "1"),
+            ("5", "3@a"),
+            ("6", "3@b"),
+            ("7", "5"),
+            ("7", "6"),
+        ]
+    )
+    expected_graph = nx.DiGraph(
+        [
+            ("2", "1"),
+            ("3", "2"),
+            ("4", "1"),
+            ("3", "4"),
+            ("3", "1"),
+            ("5", "3"),
+            ("6", "3"),
+            ("7", "5"),
+            ("7", "6"),
+        ]
+    )
+    collapsed_graph = _collapse_foreach_matrix(graph)
+    for node in collapsed_graph.nodes:
+        assert JOIN not in node
+    for n1, n2 in collapsed_graph.edges:
+        assert JOIN not in n1
+        assert JOIN not in n2
+    assert nx.is_isomorphic(collapsed_graph, expected_graph)
+
+
 def test_build(repo):
     assert nx.is_isomorphic(_build(repo), repo.index.graph)
+
+
+def test_build_collapse(repo):
+    assert nx.is_isomorphic(
+        _build(repo, collapse_foreach_matrix=True), repo.index.graph
+    )
 
 
 def test_build_target(repo):
@@ -119,7 +170,7 @@ def test_show_ascii(repo):
 def test_show_dot(repo):
     # dot file rendering is not deterministic though graph
     # output doesn't depend upon order of lines. Use sorted values
-    # https://github.com/iterative/dvc/pull/7725
+    # https://github.com/treeverse/dvc/pull/7725
     expected = [
         "\"stage: '1'\";",
         "\"stage: '2'\";",

@@ -405,7 +405,7 @@ def test_import_non_existing(erepo_dir, tmp_dir, dvc):
     with pytest.raises(FileNotFoundError):
         tmp_dir.dvc.imp(os.fspath(erepo_dir), "invalid_output")
 
-    # https://github.com/iterative/dvc/pull/2837#discussion_r352123053
+    # https://github.com/treeverse/dvc/pull/2837#discussion_r352123053
     with pytest.raises(FileNotFoundError):
         tmp_dir.dvc.imp(os.fspath(erepo_dir), "/root/", "root")
 
@@ -628,7 +628,7 @@ def test_chained_import(tmp_dir, dvc, make_tmp_dir, erepo_dir, local_cloud):
     assert (dst / "bar").read_text() == "bar"
 
 
-@pytest.mark.parametrize("paths", ([], ["dir"]))
+@pytest.mark.parametrize("paths", [[], ["dir"]])
 def test_parameterized_repo(tmp_dir, dvc, scm, erepo_dir, paths):
     path = erepo_dir.joinpath(*paths)
     path.mkdir(parents=True, exist_ok=True)

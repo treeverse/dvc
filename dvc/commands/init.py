@@ -29,7 +29,7 @@ def _welcome_message():
         "{yellow}------------{nc}\n"
         f"- Check out the documentation: {fmt_link('https://dvc.org/doc')}\n"
         f"- Get help and share ideas: {fmt_link('https://dvc.org/chat')}\n"
-        f"- Star us on GitHub: {fmt_link('https://github.com/iterative/dvc')}"
+        f"- Star us on GitHub: {fmt_link('https://github.com/treeverse/dvc')}"
     ).format(yellow=colorama.Fore.YELLOW, nc=colorama.Fore.RESET)
 
     ui.write(msg)

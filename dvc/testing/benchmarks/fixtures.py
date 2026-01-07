@@ -79,7 +79,7 @@ def dvc_bench_repo(tmp_path_factory, bench_config):
     if url is None:
         pytest.skip(
             "--dvc-bench-repo is not set, "
-            "clone https://github.com/iterative/dvc-bench repository and set its path"
+            "clone https://github.com/treeverse/dvc-bench repository and set its path"
         )
 
     if os.path.isdir(url):
@@ -158,7 +158,7 @@ def make_bench(request):
             # pytest >= 8.4.0
             wrapped_func = fixture_function._get_wrapped_function()
         except AttributeError:
-            wrapped_func = fixture_function.__pytest_wrapped__.obj  # ty: ignore[unresolved-attribute]
+            wrapped_func = fixture_function.__pytest_wrapped__.obj  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
         assert inspect.isgeneratorfunction(wrapped_func)
 
         generator = wrapped_func(request)

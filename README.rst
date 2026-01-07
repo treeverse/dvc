@@ -167,7 +167,7 @@ To install the development version, run:
 
 .. code-block:: bash
 
-   pip install git+git://github.com/iterative/dvc
+   pip install "dvc @ git+https://github.com/treeverse/dvc"
 
 Package (Platform-specific)
 ---------------------------
@@ -175,7 +175,7 @@ Package (Platform-specific)
 |Packages|
 
 Self-contained packages for Linux, Windows, and Mac are available.
-The latest version of the packages can be found on the GitHub `releases page <https://github.com/iterative/dvc/releases>`_.
+The latest version of the packages can be found on the GitHub `releases page <https://github.com/treeverse/dvc/releases>`_.
 
 Ubuntu / Debian (deb)
 ^^^^^^^^^^^^^^^^^^^^^
@@ -197,8 +197,6 @@ Fedora / CentOS (rpm)
 
 Contributing
 ============
-
-|Maintainability|
 
 Contributions are welcome!
 Please see our `Contributing Guide <https://dvc.org/doc/user-guide/contributing/core>`_ for more details.
@@ -237,23 +235,19 @@ Barrak, A., Eghan, E.E. and Adams, B. `On the Co-evolution of ML Pipelines and S
    :target: https://dvc.org
    :alt: DVC logo
 
-.. |VS Code Extension Overview| image:: https://raw.githubusercontent.com/iterative/vscode-dvc/main/extension/docs/overview.gif
+.. |VS Code Extension Overview| image:: https://raw.githubusercontent.com/treeverse/vscode-dvc/main/extension/docs/overview.gif
    :alt: DVC Extension for VS Code
 
-.. |CI| image:: https://github.com/iterative/dvc/actions/workflows/tests.yaml/badge.svg
-   :target: https://github.com/iterative/dvc/actions/workflows/tests.yaml
+.. |CI| image:: https://github.com/treeverse/dvc/actions/workflows/tests.yaml/badge.svg
+   :target: https://github.com/treeverse/dvc/actions/workflows/tests.yaml
    :alt: GHA Tests
-
-.. |Maintainability| image:: https://img.shields.io/codeclimate/maintainability/iterative/dvc
-   :target: https://codeclimate.com/github/iterative/dvc
-   :alt: Code Climate
 
 .. |Python Version| image:: https://img.shields.io/pypi/pyversions/dvc
    :target: https://pypi.org/project/dvc
    :alt: Python Version
 
-.. |Coverage| image:: https://codecov.io/gh/iterative/dvc/branch/main/graph/badge.svg
-   :target: https://codecov.io/gh/iterative/dvc
+.. |Coverage| image:: https://codecov.io/gh/treeverse/dvc/branch/main/graph/badge.svg
+   :target: https://codecov.io/gh/treeverse/dvc
    :alt: Codecov
 
 .. |Snap| image:: https://img.shields.io/badge/snap-install-82BEA0.svg?logo=snapcraft
@@ -292,8 +286,8 @@ Barrak, A., Eghan, E.E. and Adams, B. `On the Co-evolution of ML Pipelines and S
    :target: https://dvc.org/img/flow.gif
    :alt: how_dvc_works
 
-.. |Contribs| image:: https://contrib.rocks/image?repo=iterative/dvc
-   :target: https://github.com/iterative/dvc/graphs/contributors
+.. |Contribs| image:: https://contrib.rocks/image?repo=treeverse/dvc
+   :target: https://github.com/treeverse/dvc/graphs/contributors
    :alt: Contributors
 
 .. |VS Code| image:: https://img.shields.io/visual-studio-marketplace/v/Iterative.dvc?color=blue&label=VSCode&logo=visualstudiocode&logoColor=blue

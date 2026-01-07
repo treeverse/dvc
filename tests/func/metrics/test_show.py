@@ -11,6 +11,7 @@ from dvc.dvcfile import PROJECT_FILE
 from dvc.exceptions import OverlappingOutputPathsError
 from dvc.repo import Repo
 from dvc.repo.metrics.show import FileResult, Result
+from dvc.testing import matchers as M
 from dvc.utils.fs import remove
 from dvc.utils.serialize import JSONFileCorruptedError
 from dvc_data.index import DataIndexDirError
@@ -246,7 +247,7 @@ def test_show_malformed_metric(tmp_dir, scm, dvc, caplog):
     )
 
 
-def test_metrics_show_no_target(M, tmp_dir, dvc, capsys):
+def test_metrics_show_no_target(tmp_dir, dvc, capsys):
     assert dvc.metrics.show(targets=["metrics.json"]) == {
         "": {"data": {"metrics.json": {"error": M.instance_of(FileNotFoundError)}}}
     }
@@ -289,14 +290,14 @@ def test_metrics_show_overlap(tmp_dir, dvc, run_copy_metrics, clear_before_run):
 
 @pytest.mark.parametrize(
     "file,error_path,err_type",
-    (
+    [
         (PROJECT_FILE, ["workspace", "error", "type"], "YAMLSyntaxError"),
         (
             "metrics.yaml",
             ["workspace", "data", "metrics.yaml", "error", "type"],
             "YAMLFileCorruptedError",
         ),
-    ),
+    ],
 )
 def test_log_errors(
     tmp_dir, scm, dvc, capsys, run_copy_metrics, file, error_path, err_type
@@ -356,7 +357,7 @@ def test_top_level_parametrized(tmp_dir, dvc):
     }
 
 
-def test_metric_in_a_tracked_directory_with_missing_dir_file(M, tmp_dir, dvc):
+def test_metric_in_a_tracked_directory_with_missing_dir_file(tmp_dir, dvc):
     tmp_dir.dvc_gen({"dir": {"file": "2"}})
     (tmp_dir / "dvc.yaml").dump({"metrics": [join("dir", "file")]})
     shutil.rmtree(tmp_dir / "dir")  # remove from workspace

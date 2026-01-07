@@ -6,19 +6,43 @@ import pytest
 
 from dvc.cli import main
 from dvc.exceptions import MoveNotDataSourceError, OutputNotFoundError
+from dvc.stage.exceptions import StageFileAlreadyExistsError
 
 
-def test_move(tmp_dir, dvc):
-    tmp_dir.dvc_gen("foo", "foo")
-    dvc.move("foo", "foo1")
+def test_move(tmp_dir, dvc, scm):
+    tmp_dir.dvc_gen("foo", "bar")
+    assert (tmp_dir / "foo.dvc").exists()
+    dvc.move("foo", "bar")
 
+    assert not (tmp_dir / "foo.dvc").exists()
+    assert (tmp_dir / "bar.dvc").exists()
     assert not (tmp_dir / "foo").is_file()
-    assert (tmp_dir / "foo1").is_file()
+    assert (tmp_dir / "bar").is_file()
+    # should only have the new path in the .gitignore, and only once
+    assert (tmp_dir / ".gitignore").read_text().splitlines() == ["/bar"]
 
 
 def test_move_non_existent_file(dvc):
     with pytest.raises(OutputNotFoundError):
         dvc.move("non_existent_file", "dst")
+
+
+def test_move_missing_file(tmp_dir, dvc, scm, caplog):
+    tmp_dir.dvc_gen("foo", "foo")
+    (tmp_dir / "foo").unlink()
+    contents = (tmp_dir / "foo.dvc").parse()
+    dvc.move("foo", "bar")
+
+    assert not (tmp_dir / "foo.dvc").exists()
+    # only the path should be changed in the dvc file
+    contents["outs"][0]["path"] = "bar"
+    assert contents == (tmp_dir / "bar.dvc").parse()
+
+    # file should not be checked out
+    assert not (tmp_dir / "foo").is_file()
+    assert not (tmp_dir / "bar").is_file()
+    # should only have the new path in the .gitignore, and only once
+    assert (tmp_dir / ".gitignore").read_text().splitlines() == ["/bar"]
 
 
 def test_move_directory(tmp_dir, dvc):
@@ -195,3 +219,176 @@ def test_move_meta(tmp_dir, dvc):
           custom_key: 42
     """
     )
+
+
+def test_import(tmp_dir, dvc, scm):
+    tmp_dir.dvc_gen("foo", "foo", commit="add foo")
+    imp_stage = dvc.imp(os.curdir, "foo", "foo_imported")
+
+    dvc.move("foo_imported", "foo_moved")
+
+    (stage,) = dvc.stage.collect("foo_moved.dvc")
+    assert imp_stage.md5 != stage.md5
+    res = (tmp_dir / "foo_moved.dvc").read_text()
+    assert res == textwrap.dedent(
+        f"""\
+        md5: {stage.md5}
+        frozen: true
+        deps:
+        - path: foo
+          repo:
+            url: {os.curdir}
+            rev_lock: {scm.get_rev()}
+        outs:
+        - md5: acbd18db4cc2f85cedef654fccc4a4d8
+          size: 3
+          hash: md5
+          path: foo_moved
+    """
+    )
+
+
+@pytest.mark.parametrize(
+    "path_func",
+    [pytest.param(os.path.abspath, id="abs"), pytest.param(os.path.relpath, id="rel")],
+)
+def test_import_url_in_repo(tmp_dir, dvc, path_func):
+    tmp_dir.gen("foo", "foo")
+    imp_stage = dvc.imp_url(path_func(tmp_dir / "foo"), "foo_imported")
+    (tmp_dir / "data").mkdir()
+
+    dvc.move("foo_imported", os.path.join("data", "foo_moved"))
+
+    (stage,) = dvc.stage.collect(os.path.join("data", "foo_moved.dvc"))
+    assert imp_stage.md5 != stage.md5
+    res = (tmp_dir / "data" / "foo_moved.dvc").read_text()
+    assert res == textwrap.dedent(
+        f"""\
+        md5: {stage.md5}
+        frozen: true
+        deps:
+        - md5: acbd18db4cc2f85cedef654fccc4a4d8
+          size: 3
+          hash: md5
+          path: ../foo
+        outs:
+        - md5: acbd18db4cc2f85cedef654fccc4a4d8
+          size: 3
+          hash: md5
+          path: foo_moved
+    """
+    )
+
+
+@pytest.mark.parametrize(
+    "path_func",
+    [pytest.param(os.path.abspath, id="abs"), pytest.param(os.path.relpath, id="rel")],
+)
+def test_import_url_out_of_repo(tmp_dir, dvc, scm, path_func, make_tmp_dir):
+    external = make_tmp_dir("external")
+    external.gen("foo", "foo")
+
+    imp_stage = dvc.imp_url(path_func(external / "foo"), "foo_imported")
+
+    data_dir = tmp_dir / "data"
+    data_dir.mkdir()
+
+    new_path = data_dir / "foo_moved"
+    new_dvcfile = new_path.with_suffix(".dvc")
+    dvc.move("foo_imported", os.fspath(new_path))
+
+    (stage,) = dvc.stage.collect(os.fspath(new_dvcfile))
+    assert imp_stage.md5 != stage.md5
+
+    with data_dir.chdir():
+        expected_path = path_func(external / "foo")
+
+    assert new_dvcfile.parse() == {
+        "md5": stage.md5,
+        "frozen": True,
+        "deps": [
+            {
+                "md5": "acbd18db4cc2f85cedef654fccc4a4d8",
+                "size": 3,
+                "hash": "md5",
+                "path": expected_path,
+            }
+        ],
+        "outs": [
+            {
+                "md5": "acbd18db4cc2f85cedef654fccc4a4d8",
+                "size": 3,
+                "hash": "md5",
+                "path": "foo_moved",
+            }
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    "path_func",
+    [pytest.param(os.path.abspath, id="abs"), pytest.param(os.path.relpath, id="rel")],
+)
+def test_all_metadata_are_preserved(tmp_dir, dvc, make_tmp_dir, path_func):
+    external = make_tmp_dir("external")
+    external.gen("foo", "foo")
+
+    contents = {
+        "md5": "bad",  # placeholder, does not matter for the test
+        "frozen": True,
+        "desc": "this is a stage description",
+        "always_changed": True,
+        "meta": {"custom_key": 42},
+        "deps": [
+            {
+                "md5": "acbd18db4cc2f85cedef654fccc4a4d8",
+                "size": 3,
+                "hash": "md5",
+                "path": path_func(external / "foo"),
+            }
+        ],
+        "outs": [
+            {
+                "md5": "acbd18db4cc2f85cedef654fccc4a4d8",
+                "path": "foo_imported",
+                "persist": True,
+                "hash": "md5",
+                "size": 3,
+                "desc": "this is a description",
+                "type": "model",
+                "labels": ["label1", "label2"],
+                "meta": {"custom_key": 42},
+                "cache": False,
+                "remote": "myremote",
+                "push": False,
+            }
+        ],
+    }
+    (tmp_dir / "foo_imported.dvc").dump(contents)
+    (tmp_dir / "foo_imported").write_text("foo")
+
+    data_dir = tmp_dir / "data"
+    data_dir.mkdir()
+
+    new_path = data_dir / "foo_moved"
+    new_dvcfile = new_path.with_suffix(".dvc")
+    dvc.move("foo_imported", os.fspath(new_path))
+
+    (stage,) = dvc.stage.collect(os.fspath(new_dvcfile))
+
+    with data_dir.chdir():
+        expected_path = path_func(external / "foo")
+
+    contents["outs"][0] |= {"path": "foo_moved"}
+    contents["deps"][0] |= {"path": expected_path}
+    contents |= {"md5": stage.md5}
+    assert new_dvcfile.parse() == contents
+
+
+def test_move_dst_stage_file_already_exists(tmp_dir, dvc):
+    tmp_dir.dvc_gen({"foo": "foo", "bar": "bar"})
+
+    with pytest.raises(StageFileAlreadyExistsError) as exc_info:
+        dvc.move("foo", "bar")
+    assert str(exc_info.value) == "'bar.dvc' already exists"
+    assert exc_info.value.__cause__ is None

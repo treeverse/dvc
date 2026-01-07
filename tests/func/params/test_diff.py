@@ -2,6 +2,7 @@ from os.path import join
 
 import pytest
 
+from dvc.testing import matchers as M
 from dvc.utils import relpath
 
 
@@ -54,7 +55,7 @@ def test_diff_new(tmp_dir, scm, dvc):
     }
 
 
-def test_diff_deleted(M, tmp_dir, scm, dvc):
+def test_diff_deleted(tmp_dir, scm, dvc):
     tmp_dir.gen("params.yaml", "foo: bar")
     dvc.run(cmd="echo params.yaml", params=["foo"], name="echo-params")
     scm.add(["params.yaml", "Dvcfile"])

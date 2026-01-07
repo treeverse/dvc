@@ -1,3 +1,4 @@
+import re
 from contextlib import nullcontext as does_not_raise
 
 import pytest
@@ -214,7 +215,9 @@ def hydra_setup_dir_basic(tmp_dir, config_subdir, config_name, config_content):
             None,
             pytest.raises(
                 ValueError,
-                match="Either `config_dir` or `config_module` should be provided.",
+                match=re.escape(
+                    "Either `config_dir` or `config_module` should be provided."
+                ),
             ),
         ),
     ],
@@ -238,7 +241,7 @@ def test_compose_and_dump_dir_module(
 
 
 def test_compose_and_dump_yaml_handles_string(tmp_dir):
-    """Regression test for https://github.com/iterative/dvc/issues/8583"""
+    """Regression test for https://github.com/treeverse/dvc/issues/8583"""
     from dvc.utils.hydra import compose_and_dump
 
     config = tmp_dir / "conf" / "config.yaml"
@@ -250,7 +253,7 @@ def test_compose_and_dump_yaml_handles_string(tmp_dir):
 
 
 def test_compose_and_dump_resolves_interpolation(tmp_dir):
-    """Regression test for https://github.com/iterative/dvc/issues/9196"""
+    """Regression test for https://github.com/treeverse/dvc/issues/9196"""
     from dvc.utils.hydra import compose_and_dump
 
     config = tmp_dir / "conf" / "config.yaml"

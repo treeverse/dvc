@@ -96,7 +96,7 @@ def _log_exceptions(exc: Exception) -> Optional[int]:
                 f"See {link} for more info."
             )
         else:
-            link = format_link("https://github.com/iterative/dvc/issues")
+            link = format_link("https://github.com/treeverse/dvc/issues")
             hint = f"\nPlease report this bug to {link}. Thank you!"
 
         logger.exception(

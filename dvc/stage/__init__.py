@@ -32,7 +32,7 @@ from .utils import (
 )
 
 if TYPE_CHECKING:
-    from dvc.dependency import ParamsDependency
+    from dvc.dependency import Dependency, ParamsDependency
     from dvc.dvcfile import ProjectFile, SingleStageFile
     from dvc.output import Output
     from dvc.repo import Repo
@@ -121,7 +121,7 @@ def restore_fields(stage: "Stage") -> None:
 
     old_outs = {out.def_path: out for out in old.outs}
     for out in stage.outs:
-        old_out = old_outs.get(out.def_path, None)
+        old_out = old_outs.get(out.def_path)
         if old_out is not None:
             out.restore_fields(old_out)
 
@@ -153,8 +153,8 @@ class Stage(params.StageParams):
         self._path = path
         self.cmd = cmd
         self.wdir = wdir
-        self.outs = outs
-        self.deps = deps
+        self.outs: list[Output] = outs
+        self.deps: list[Dependency] = deps
         self.md5 = md5
         self.frozen = locked or frozen
         self.always_changed = always_changed

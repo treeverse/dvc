@@ -206,7 +206,7 @@ def add_debugging_flags(parser):
     from argparse import SUPPRESS
 
     # For detailed info see:
-    # https://github.com/iterative/dvc/wiki/Debugging,-Profiling-and-Benchmarking-DVC
+    # https://github.com/treeverse/dvc/wiki/Debugging,-Profiling-and-Benchmarking-DVC
     args, _ = parser.parse_known_args()
     verbose = args.verbose
 
