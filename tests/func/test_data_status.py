@@ -1244,3 +1244,27 @@ def test_shallow_should_iterate_upto_tracked_directory(tmp_dir, dvc, scm, local_
         "committed": {"added": M.unordered(*files)},
         "git": M.dict(),
     }
+
+
+def test_duplicate_hashes_not_in_remote(tmp_dir, dvc, scm, local_remote):
+    """Test that files with identical content (same hash) are all correctly reported.
+
+    Regression test for https://github.com/iterative/dvc/issues/10959
+    """
+    tmp_dir.dvc_gen(
+        {"foo": "content", "bar": "content", "foobar": "foobar"}, commit="add files"
+    )
+    assert dvc.data_status(not_in_remote=True, granular=True, remote_refresh=True) == {
+        **EMPTY_STATUS,
+        "unchanged": M.unordered("foo", "bar", "foobar"),
+        "not_in_remote": M.unordered("foo", "bar", "foobar"),
+        "git": M.dict(),
+    }
+
+    dvc.push()
+    assert dvc.data_status(not_in_remote=True, granular=True, remote_refresh=True) == {
+        **EMPTY_STATUS,
+        "unchanged": M.unordered("foo", "bar", "foobar"),
+        "not_in_remote": [],
+        "git": M.dict(),
+    }
