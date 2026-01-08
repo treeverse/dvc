@@ -349,7 +349,11 @@ class Context(CtxDict):
 
     @classmethod
     def load_from(
-        cls, fs, path: str, select_keys: Optional[list[str]] = None
+        cls,
+        fs,
+        path: str,
+        select_keys: Optional[list[str]] = None,
+        use_fast_yaml: bool = False,
     ) -> "Context":
         from dvc.utils.serialize import load_path
 
@@ -358,7 +362,7 @@ class Context(CtxDict):
         if fs.isdir(path):
             raise ParamsLoadError(f"'{path}' is a directory")
 
-        data = load_path(path, fs)
+        data = load_path(path, fs, use_fast_yaml=use_fast_yaml)
         if not isinstance(data, Mapping):
             typ = type(data).__name__
             raise ParamsLoadError(
@@ -383,7 +387,9 @@ class Context(CtxDict):
             raise ReservedKeyError(matches)
         return super().merge_update(other, overwrite=overwrite)
 
-    def merge_from(self, fs, item: str, wdir: str, overwrite=False):
+    def merge_from(
+        self, fs, item: str, wdir: str, overwrite=False, use_fast_yaml: bool = False
+    ):
         path, _, keys_str = item.partition(":")
         path = fs.normpath(fs.join(wdir, path))
 
@@ -393,7 +399,7 @@ class Context(CtxDict):
                 return  # allow specifying complete filepath multiple times
             self.check_loaded(path, item, select_keys)
 
-        ctx = Context.load_from(fs, path, select_keys)
+        ctx = Context.load_from(fs, path, select_keys, use_fast_yaml=use_fast_yaml)
 
         try:
             self.merge_update(ctx, overwrite=overwrite)
@@ -428,11 +434,12 @@ class Context(CtxDict):
         wdir: str,
         stage_name: Optional[str] = None,
         default: Optional[str] = None,
+        use_fast_yaml: bool = False,
     ):
         if default:
             to_import = fs.join(wdir, default)
             if fs.exists(to_import):
-                self.merge_from(fs, default, wdir)
+                self.merge_from(fs, default, wdir, use_fast_yaml=use_fast_yaml)
             else:
                 msg = "%s does not exist, it won't be used in parametrization"
                 logger.trace(msg, to_import)
@@ -441,7 +448,7 @@ class Context(CtxDict):
         for index, item in enumerate(vars_):
             assert isinstance(item, (str, dict))
             if isinstance(item, str):
-                self.merge_from(fs, item, wdir)
+                self.merge_from(fs, item, wdir, use_fast_yaml=use_fast_yaml)
             else:
                 joiner = "." if stage_name else ""
                 meta = Meta(source=f"{stage_name}{joiner}vars[{index}]")

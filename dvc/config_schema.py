@@ -342,6 +342,7 @@ SCHEMA = {
     "feature": FeatureSchema(
         {
             Optional("machine", default=False): Bool,
+            Optional("fast_yaml", default=False): Bool,
         },
     ),
     "plots": {
