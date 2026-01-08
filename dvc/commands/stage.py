@@ -65,6 +65,43 @@ def prepare_stages_data(
     }
 
 
+def _serialize_stage_for_json(stage: "Stage") -> dict:
+    from typing import Any
+
+    from dvc.stage.utils import split_params_deps
+
+    param_deps, other_deps = split_params_deps(stage)
+    deps = [dep.def_path for dep in other_deps]
+    params: dict[str, Any] = {}
+    for param_dep in param_deps:
+        param_values: Any = param_dep.hash_info.value if param_dep.hash_info else {}
+        if isinstance(param_values, dict) and param_values:
+            params[param_dep.def_path] = param_values
+
+    outs, metrics, plots = [], [], []
+    for out in stage.outs:
+        if out.metric:
+            metrics.append(out.def_path)
+        elif out.plot:
+            plots.append(out.def_path)
+        else:
+            outs.append(out.def_path)
+
+    return {
+        "cmd": stage.cmd,
+        "deps": deps,
+        "outs": outs,
+        "metrics": metrics,
+        "plots": plots,
+        "params": params,
+        "desc": stage.desc,
+    }
+
+
+def prepare_stages_data_json(stages: Iterable["Stage"]) -> dict[str, dict]:
+    return {stage.addressing: _serialize_stage_for_json(stage) for stage in stages}
+
+
 class CmdStageList(CmdBase):
     def _get_stages(self) -> Iterable["Stage"]:
         if self.args.all:
@@ -91,8 +128,17 @@ class CmdStageList(CmdBase):
         self.repo.stage_collection_error_handler = log_error
 
         stages = self._get_stages()
-        data = prepare_stages_data(stages, description=not self.args.name_only)
-        ui.table(list(data.items()))
+
+        if self.args.json:
+            ui.write_json(prepare_stages_data_json(stages))
+        else:
+            ui.table(
+                list(
+                    prepare_stages_data(
+                        stages, description=not self.args.name_only
+                    ).items()
+                )
+            )
 
         return 0
 
@@ -350,5 +396,11 @@ def add_parser(subparsers, parent_parser):
         action="store_true",
         default=False,
         help="List only stage names.",
+    )
+    stage_list_parser.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help="Show output in JSON format.",
     )
     stage_list_parser.set_defaults(func=CmdStageList)
