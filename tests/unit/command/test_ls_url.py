@@ -2,9 +2,10 @@ from dvc.cli import parse_args
 from dvc.commands.ls_url import CmdListUrl
 from dvc.config import Config
 from dvc.fs import LocalFileSystem
+from dvc.testing import matchers as M
 
 
-def test_ls_url(mocker, M):
+def test_ls_url(mocker):
     cli_args = parse_args(["ls-url", "src"])
     assert cli_args.func == CmdListUrl
     cmd = cli_args.func(cli_args)
@@ -21,7 +22,7 @@ def test_ls_url(mocker, M):
     )
 
 
-def test_recursive(mocker, M):
+def test_recursive(mocker):
     cli_args = parse_args(["ls-url", "-R", "-L", "2", "src"])
     assert cli_args.func == CmdListUrl
     cmd = cli_args.func(cli_args)
@@ -34,7 +35,7 @@ def test_recursive(mocker, M):
     )
 
 
-def test_tree(mocker, M):
+def test_tree(mocker):
     cli_args = parse_args(["ls-url", "--tree", "--level", "2", "src"])
     assert cli_args.func == CmdListUrl
     cmd = cli_args.func(cli_args)

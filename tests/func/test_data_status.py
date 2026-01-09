@@ -6,10 +6,10 @@ from os.path import join
 from typing import TYPE_CHECKING
 
 import pytest
-from pytest_test_utils import matchers as m
 
 from dvc.repo import Repo
 from dvc.repo.data import _transform_git_paths_to_dvc, posixpath_to_os_path
+from dvc.testing import matchers as M
 from dvc.testing.tmp_dir import TmpDir, make_subrepo
 from dvc.utils.fs import remove
 
@@ -60,7 +60,7 @@ def test_git_to_dvc_path_wdir_transformation(tmp_dir, scm, path):
             ]
 
 
-def test_file(M, tmp_dir, dvc, scm):
+def test_file(tmp_dir, dvc, scm):
     tmp_dir.dvc_gen("foo", "foo", commit="add foo")
     tmp_dir.dvc_gen("foo", "foobar")
     remove(tmp_dir / "foo")
@@ -75,7 +75,7 @@ def test_file(M, tmp_dir, dvc, scm):
     assert dvc.data_status(granular=True) == expected
 
 
-def test_directory(M, tmp_dir, dvc, scm):
+def test_directory(tmp_dir, dvc, scm):
     tmp_dir.dvc_gen({"dir": {"foo": "foo"}}, commit="add dir")
     tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar", "foobar": "foobar"}})
     remove(tmp_dir / "dir")
@@ -107,7 +107,7 @@ def test_directory(M, tmp_dir, dvc, scm):
     }
 
 
-def test_tracked_directory_deep(M, tmp_dir, dvc, scm):
+def test_tracked_directory_deep(tmp_dir, dvc, scm):
     """Test for a directory not in cwd, but nested inside other directories."""
     (tmp_dir / "sub").gen({"dir": {"foo": "foo"}})
     dvc.add(fspath(tmp_dir / "sub" / "dir"))
@@ -140,7 +140,7 @@ def test_tracked_directory_deep(M, tmp_dir, dvc, scm):
 
 @pytest.mark.parametrize("git_repo_state", ["unborn", "committed"])
 @pytest.mark.parametrize("subdir", [True, False])
-def test_new_dvc_repo(M, tmp_dir, scm, subdir, git_repo_state):
+def test_new_dvc_repo(tmp_dir, scm, subdir, git_repo_state):
     if git_repo_state == "committed":
         tmp_dir.scm_gen("test", "test", commit="init")
 
@@ -167,7 +167,7 @@ def test_noscm_repo(tmp_dir, dvc):
     assert dvc.data_status() == {**EMPTY_STATUS, "unchanged": ["foo"]}
 
 
-def test_unchanged(M, tmp_dir, dvc, scm):
+def test_unchanged(tmp_dir, dvc, scm):
     tmp_dir.dvc_gen({"dir": {"foo": "foo"}}, commit="add dir")
     tmp_dir.dvc_gen("bar", "bar", commit="add foo")
 
@@ -195,7 +195,7 @@ def test_skip_uncached_pipeline_outputs(tmp_dir, dvc, run_copy_metrics):
     assert dvc.data_status(granular=True, untracked_files="all") == EMPTY_STATUS
 
 
-def test_outs_with_no_hashes(M, tmp_dir, dvc, scm):
+def test_outs_with_no_hashes(tmp_dir, dvc, scm):
     dvc.stage.add(single_stage=True, outs=["bar"])
     dvc.stage.add(deps=["bar"], outs=["foo"], name="copy", cmd="cp foo bar")
 
@@ -204,7 +204,7 @@ def test_outs_with_no_hashes(M, tmp_dir, dvc, scm):
     assert dvc.data_status(granular=True) == expected_output
 
 
-def test_outs_with_no_hashes_and_with_uncommitted_files(M, tmp_dir, dvc, scm):
+def test_outs_with_no_hashes_and_with_uncommitted_files(tmp_dir, dvc, scm):
     tmp_dir.gen({"bar": "bar", "foo": "foo"})
     dvc.stage.add(single_stage=True, outs=["bar"])
     dvc.stage.add(deps=["bar"], outs=["foo"], name="copy", cmd="cp foo bar")
@@ -218,7 +218,7 @@ def test_outs_with_no_hashes_and_with_uncommitted_files(M, tmp_dir, dvc, scm):
     assert dvc.data_status(granular=True) == expected_output
 
 
-def test_subdir(M, tmp_dir, scm):
+def test_subdir(tmp_dir, scm):
     subrepo = tmp_dir / "sub"
     make_subrepo(subrepo, scm)
 
@@ -236,7 +236,7 @@ def test_subdir(M, tmp_dir, scm):
         }
 
 
-def test_untracked_newly_added_files(M, tmp_dir, dvc, scm):
+def test_untracked_newly_added_files(tmp_dir, dvc, scm):
     tmp_dir.gen({"dir": {"foo": "foo", "bar": "bar"}})
     tmp_dir.gen("foobar", "foobar")
 
@@ -249,7 +249,7 @@ def test_untracked_newly_added_files(M, tmp_dir, dvc, scm):
     assert dvc.data_status(granular=True, untracked_files="all") == expected
 
 
-def test_missing_cache_workspace_exists(M, tmp_dir, dvc, scm):
+def test_missing_cache_workspace_exists(tmp_dir, dvc, scm):
     tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar"}})
     tmp_dir.dvc_gen("foobar", "foobar")
     remove(dvc.cache.repo.path)
@@ -272,7 +272,7 @@ def test_missing_cache_workspace_exists(M, tmp_dir, dvc, scm):
     }
 
 
-def test_missing_cache_missing_workspace(M, tmp_dir, dvc, scm):
+def test_missing_cache_missing_workspace(tmp_dir, dvc, scm):
     tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar"}})
     tmp_dir.dvc_gen("foobar", "foobar")
     for path in [dvc.cache.repo.path, "dir", "foobar"]:
@@ -297,7 +297,7 @@ def test_missing_cache_missing_workspace(M, tmp_dir, dvc, scm):
     }
 
 
-def test_git_committed_missing_cache_workspace_exists(M, tmp_dir, dvc, scm):
+def test_git_committed_missing_cache_workspace_exists(tmp_dir, dvc, scm):
     tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar"}}, commit="add dir")
     tmp_dir.dvc_gen("foobar", "foobar", commit="add foobar")
     remove(dvc.cache.local.path)
@@ -317,7 +317,7 @@ def test_git_committed_missing_cache_workspace_exists(M, tmp_dir, dvc, scm):
     }
 
 
-def test_git_committed_missing_cache_missing_workspace(M, tmp_dir, dvc, scm):
+def test_git_committed_missing_cache_missing_workspace(tmp_dir, dvc, scm):
     tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar"}}, commit="add dir")
     tmp_dir.dvc_gen("foobar", "foobar", commit="add foobar")
     for path in [dvc.cache.repo.path, "dir", "foobar"]:
@@ -338,7 +338,7 @@ def test_git_committed_missing_cache_missing_workspace(M, tmp_dir, dvc, scm):
     }
 
 
-def test_partial_missing_cache(M, tmp_dir, dvc, scm):
+def test_partial_missing_cache(tmp_dir, dvc, scm):
     tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar"}})
 
     # remove "foo" from cache
@@ -362,7 +362,7 @@ def test_partial_missing_cache(M, tmp_dir, dvc, scm):
     }
 
 
-def test_missing_dir_object_from_head(M, tmp_dir, dvc, scm):
+def test_missing_dir_object_from_head(tmp_dir, dvc, scm):
     (stage,) = tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar"}}, commit="add dir")
     remove("dir")
     tmp_dir.dvc_gen({"dir": {"foobar": "foobar"}})
@@ -384,7 +384,7 @@ def test_missing_dir_object_from_head(M, tmp_dir, dvc, scm):
     }
 
 
-def test_missing_dir_object_from_index(M, tmp_dir, dvc, scm):
+def test_missing_dir_object_from_index(tmp_dir, dvc, scm):
     tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar"}}, commit="add dir")
     remove("dir")
     (stage,) = tmp_dir.dvc_gen({"dir": {"foobar": "foobar"}})
@@ -406,7 +406,7 @@ def test_missing_dir_object_from_index(M, tmp_dir, dvc, scm):
     }
 
 
-def test_remote_check(M, tmp_dir, dvc, scm, make_remote):
+def test_remote_check(tmp_dir, dvc, scm, make_remote):
     make_remote("default", default=True)
     make_remote("myremote", default=False)
 
@@ -442,7 +442,7 @@ def test_remote_check(M, tmp_dir, dvc, scm, make_remote):
     assert dvc.data_status(granular=True, **opts) == expected_g
 
 
-def test_missing_remote_cache(M, tmp_dir, dvc, scm, local_remote):
+def test_missing_remote_cache(tmp_dir, dvc, scm, local_remote):
     tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar"}})
     tmp_dir.dvc_gen("foobar", "foobar")
 
@@ -485,7 +485,7 @@ def test_missing_remote_cache(M, tmp_dir, dvc, scm, local_remote):
 
 
 def test_not_in_remote_respects_not_pushable(
-    M: type["m.Matcher"], tmp_dir: TmpDir, dvc: Repo, scm, mocker, local_remote
+    tmp_dir: TmpDir, dvc: Repo, scm, mocker, local_remote
 ):
     stages: list[Stage] = tmp_dir.dvc_gen({"foo": "foo", "dir": {"foobar": "foobar"}})
     # Make foo not pushable
@@ -529,7 +529,7 @@ def test_not_in_remote_respects_not_pushable(
     )
 
 
-def test_root_from_dir_to_file(M, tmp_dir, dvc, scm):
+def test_root_from_dir_to_file(tmp_dir, dvc, scm):
     tmp_dir.dvc_gen({"data": {"foo": "foo", "bar": "bar"}})
     remove("data")
     tmp_dir.gen("data", "file")
@@ -555,7 +555,7 @@ def test_root_from_dir_to_file(M, tmp_dir, dvc, scm):
     }
 
 
-def test_root_from_file_to_dir(M, tmp_dir, dvc, scm):
+def test_root_from_file_to_dir(tmp_dir, dvc, scm):
     tmp_dir.dvc_gen("data", "file")
     remove("data")
     tmp_dir.gen({"data": {"foo": "foo", "bar": "bar"}})
@@ -577,7 +577,7 @@ def test_root_from_file_to_dir(M, tmp_dir, dvc, scm):
     }
 
 
-def test_empty_dir(tmp_dir, scm, dvc, M):
+def test_empty_dir(tmp_dir, scm, dvc):
     # regression testing for https://github.com/treeverse/dvc/issues/8958
     tmp_dir.dvc_gen({"data": {"foo": "foo"}})
     remove("data")
@@ -592,7 +592,7 @@ def test_empty_dir(tmp_dir, scm, dvc, M):
     }
 
 
-def test_untracked_files_filter_targets(M, tmp_dir, scm, dvc):
+def test_untracked_files_filter_targets(tmp_dir, scm, dvc):
     tmp_dir.gen(
         {"spam": "spam", "ham": "ham", "dir": {"eggs": "eggs", "bacon": "bacon"}}
     )
@@ -644,13 +644,13 @@ def param(*values):
         param(
             ["foo", "foobar"],
             {
-                "committed": {"added": m.unordered("foo", "foobar")},
+                "committed": {"added": M.unordered("foo", "foobar")},
                 "uncommitted": {"deleted": ["foo"]},
             },
         ),
     ],
 )
-def test_filter_targets_files_after_dvc_commit(M, tmp_dir, dvc, scm, targets, expected):
+def test_filter_targets_files_after_dvc_commit(tmp_dir, dvc, scm, targets, expected):
     tmp_dir.dvc_gen({"foo": "foo", "bar": "bar", "foobar": "foobar"})
     (tmp_dir / "foo").unlink()  # deleted
     tmp_dir.gen({"bar": "bar modified", "baz": "baz new"})
@@ -677,7 +677,7 @@ def test_filter_targets_files_after_dvc_commit(M, tmp_dir, dvc, scm, targets, ex
         ),
     ],
 )
-def test_filter_targets_after_git_commit(M, tmp_dir, dvc, scm, targets, expected):
+def test_filter_targets_after_git_commit(tmp_dir, dvc, scm, targets, expected):
     tmp_dir.dvc_gen(
         {"foo": "foo", "bar": "bar", "foobar": "foobar", "baz": "baz"},
         commit="add files",
@@ -718,7 +718,7 @@ def with_aliases(values, aliases):
                 },
                 {
                     "committed": {
-                        "added": m.unordered(
+                        "added": M.unordered(
                             join("dir", ""),
                             join("dir", "foo"),
                             join("dir", "sub", "bar"),
@@ -779,7 +779,7 @@ def with_aliases(values, aliases):
                 {},
                 {
                     "committed": {
-                        "added": m.unordered(join("dir", "foo"), join("dir", "foobar"))
+                        "added": M.unordered(join("dir", "foo"), join("dir", "foobar"))
                     },
                     "uncommitted": {"deleted": [join("dir", "foo")]},
                 },
@@ -794,7 +794,7 @@ def with_aliases(values, aliases):
     ),
 )
 def test_filter_targets_inside_directory_after_dvc_commit(
-    M, tmp_dir, dvc, scm, targets, expected_ng, expected_g
+    tmp_dir, dvc, scm, targets, expected_ng, expected_g
 ):
     tmp_dir.dvc_gen({"dir": {"foo": "foo", "sub": {"bar": "bar"}, "foobar": "foobar"}})
     (tmp_dir / "dir" / "foo").unlink()  # deleted
@@ -827,7 +827,7 @@ def test_filter_targets_inside_directory_after_dvc_commit(
                     "unchanged": [join("dir", "foobar")],
                     "committed": {
                         "added": [join("dir", "baz")],
-                        "modified": m.unordered(
+                        "modified": M.unordered(
                             join("dir", ""), join("dir", "sub", "bar")
                         ),
                         "deleted": [join("dir", "foo")],
@@ -861,7 +861,7 @@ def test_filter_targets_inside_directory_after_dvc_commit(
     ),
 )
 def test_filter_targets_inside_directory_after_git_commit(
-    M, tmp_dir, dvc, scm, targets, expected_ng, expected_g
+    tmp_dir, dvc, scm, targets, expected_ng, expected_g
 ):
     tmp_dir.dvc_gen(
         {"dir": {"foo": "foo", "sub": {"bar": "bar"}, "foobar": "foobar"}},
@@ -893,22 +893,22 @@ def test_filter_targets_inside_directory_after_git_commit(
         param(
             (join("dir", "bar"), "foo"),
             ["foo"],
-            m.unordered(join("dir", "bar"), "foo"),
+            M.unordered(join("dir", "bar"), "foo"),
         ),
         param(
             (join("dir", "bar"), "dir"),
             [join("dir", "")],
-            m.unordered(join("dir", ""), join("dir", "bar")),
+            M.unordered(join("dir", ""), join("dir", "bar")),
         ),
         param(
             ("dir", "foo"),
-            m.unordered(join("dir", ""), "foo"),
-            m.unordered(join("dir", ""), join("dir", "bar"), "foo"),
+            M.unordered(join("dir", ""), "foo"),
+            M.unordered(join("dir", ""), join("dir", "bar"), "foo"),
         ),
     ],
 )
 def test_filter_targets_not_in_cache(
-    M, local_remote, tmp_dir, scm, dvc, to_check, targets, non_granular, granular
+    local_remote, tmp_dir, scm, dvc, to_check, targets, non_granular, granular
 ):
     tmp_dir.dvc_gen({"foo": "foo", "dir": {"bar": "bar"}})
 
@@ -927,7 +927,7 @@ def test_filter_targets_not_in_cache(
     }
 
 
-def test_compat_legacy_new_cache_types(M, tmp_dir, dvc, scm):
+def test_compat_legacy_new_cache_types(tmp_dir, dvc, scm):
     tmp_dir.gen({"foo": "foo", "bar": "bar"})
     (tmp_dir / "foo.dvc").dump(
         {
@@ -964,7 +964,7 @@ def test_compat_legacy_new_cache_types(M, tmp_dir, dvc, scm):
     }
 
 
-def test_missing_cache_remote_check(M, tmp_dir, dvc, scm, local_remote):
+def test_missing_cache_remote_check(tmp_dir, dvc, scm, local_remote):
     tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar"}})
     tmp_dir.dvc_gen("foobar", "foobar")
     remove(dvc.cache.repo.path)
@@ -1046,7 +1046,7 @@ def test_missing_cache_remote_check(M, tmp_dir, dvc, scm, local_remote):
             {"committed": {"deleted": [join("dir", "")]}},
             {
                 "committed": {
-                    "deleted": m.unordered(
+                    "deleted": M.unordered(
                         join("dir", ""), join("dir", "bar"), join("dir", "foo")
                     )
                 }
@@ -1060,7 +1060,7 @@ def test_missing_cache_remote_check(M, tmp_dir, dvc, scm, local_remote):
             },
             {
                 "committed": {
-                    "added": m.unordered(
+                    "added": M.unordered(
                         join("dir2", ""),
                         join("dir2", "bar"),
                         join("dir2", "foo"),
@@ -1150,12 +1150,12 @@ def test_missing_cache_remote_check(M, tmp_dir, dvc, scm, local_remote):
         param(
             ["dir2", "file2"],
             {
-                "committed": {"added": m.unordered(join("dir2", ""), "file2")},
+                "committed": {"added": M.unordered(join("dir2", ""), "file2")},
                 "uncommitted": {"modified": [join("dir2", "")]},
             },
             {
                 "committed": {
-                    "added": m.unordered(
+                    "added": M.unordered(
                         join("dir2", ""),
                         join("dir2", "bar"),
                         join("dir2", "foo"),
@@ -1178,7 +1178,7 @@ def test_missing_cache_remote_check(M, tmp_dir, dvc, scm, local_remote):
             },
             {
                 "committed": {
-                    "added": m.unordered(
+                    "added": M.unordered(
                         join("dir2", ""), join("dir2", "bar"), join("dir2", "foo")
                     ),
                     "deleted": ["file"],
@@ -1193,9 +1193,7 @@ def test_missing_cache_remote_check(M, tmp_dir, dvc, scm, local_remote):
         ),
     ],
 )
-def test_renames(
-    M, tmp_dir, scm, dvc, targets, expected_non_granular, expected_granular
-):
+def test_renames(tmp_dir, scm, dvc, targets, expected_non_granular, expected_granular):
     tmp_dir.dvc_gen(
         {"dir": {"foo": "foo", "bar": "bar"}, "file": "file"}, commit="add dir and file"
     )
@@ -1213,9 +1211,7 @@ def test_renames(
     )
 
 
-def test_shallow_should_iterate_upto_tracked_directory(
-    M, tmp_dir, dvc, scm, local_remote
-):
+def test_shallow_should_iterate_upto_tracked_directory(tmp_dir, dvc, scm, local_remote):
     """Testing regression for https://github.com/treeverse/dvc/issues/10899."""
 
     tmp_dir.scm_gen({"dir": {".gitkeep": ""}}, commit="mk dir")
@@ -1246,5 +1242,29 @@ def test_shallow_should_iterate_upto_tracked_directory(
     assert dvc.data_status(granular=True, not_in_remote=True, remote_refresh=True) == {
         **EMPTY_STATUS,
         "committed": {"added": M.unordered(*files)},
+        "git": M.dict(),
+    }
+
+
+def test_duplicate_hashes_not_in_remote(tmp_dir, dvc, scm, local_remote):
+    """Test that files with identical content (same hash) are all correctly reported.
+
+    Regression test for https://github.com/iterative/dvc/issues/10959
+    """
+    tmp_dir.dvc_gen(
+        {"foo": "content", "bar": "content", "foobar": "foobar"}, commit="add files"
+    )
+    assert dvc.data_status(not_in_remote=True, granular=True, remote_refresh=True) == {
+        **EMPTY_STATUS,
+        "unchanged": M.unordered("foo", "bar", "foobar"),
+        "not_in_remote": M.unordered("foo", "bar", "foobar"),
+        "git": M.dict(),
+    }
+
+    dvc.push()
+    assert dvc.data_status(not_in_remote=True, granular=True, remote_refresh=True) == {
+        **EMPTY_STATUS,
+        "unchanged": M.unordered("foo", "bar", "foobar"),
+        "not_in_remote": [],
         "git": M.dict(),
     }

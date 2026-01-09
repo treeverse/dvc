@@ -10,6 +10,7 @@ from dvc.fs import MemoryFileSystem
 from dvc.repo import Repo
 from dvc.repo.ls import _ls_tree, ls_tree
 from dvc.scm import CloneError
+from dvc.testing import matchers as M
 
 FS_STRUCTURE = {
     "README.md": "content",
@@ -460,7 +461,7 @@ def test_ls_shows_pipeline_tracked_outs(tmp_dir, dvc, scm, run_copy):
     match_files(files, ((("bar",), True),))
 
 
-def test_ls_granular(erepo_dir, M):
+def test_ls_granular(erepo_dir):
     with erepo_dir.chdir():
         erepo_dir.dvc_gen(
             {
@@ -624,7 +625,7 @@ def test_subrepo(request, dvc_top_level, erepo_type):
     assert _list_files(subrepo, "dvc_dir") == {"lorem"}
 
 
-def test_broken_symlink(tmp_dir, dvc, M):
+def test_broken_symlink(tmp_dir, dvc):
     from dvc.fs import system
 
     tmp_dir.gen("file", "content")
@@ -654,7 +655,7 @@ def test_broken_symlink(tmp_dir, dvc, M):
     ]
 
 
-def test_ls_broken_dir(tmp_dir, dvc, M):
+def test_ls_broken_dir(tmp_dir, dvc):
     from dvc_data.index import DataIndexDirError
 
     tmp_dir.dvc_gen(
@@ -836,7 +837,7 @@ def _simplify_tree(files):
     return ret
 
 
-def test_ls_tree(M, tmp_dir, scm, dvc):
+def test_ls_tree(tmp_dir, scm, dvc):
     tmp_dir.scm_gen(FS_STRUCTURE, commit="init")
     tmp_dir.dvc_gen(DVC_STRUCTURE, commit="dvc")
 
@@ -887,7 +888,7 @@ def test_ls_tree(M, tmp_dir, scm, dvc):
     }
 
 
-def test_ls_tree_dvc_only(M, tmp_dir, scm, dvc):
+def test_ls_tree_dvc_only(tmp_dir, scm, dvc):
     tmp_dir.scm_gen(FS_STRUCTURE, commit="init")
     tmp_dir.dvc_gen(DVC_STRUCTURE, commit="dvc")
 
@@ -905,7 +906,7 @@ def test_ls_tree_dvc_only(M, tmp_dir, scm, dvc):
     assert _simplify_tree(files) == expected
 
 
-def test_ls_tree_maxdepth(M, tmp_dir, scm, dvc):
+def test_ls_tree_maxdepth(tmp_dir, scm, dvc):
     tmp_dir.scm_gen(FS_STRUCTURE, commit="init")
     tmp_dir.dvc_gen(DVC_STRUCTURE, commit="dvc")
 

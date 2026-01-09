@@ -166,7 +166,7 @@ def test_virtual_update_noop(tmp_dir, dvc, remote):
     assert not dvc.push()
 
 
-def test_partial_checkout_and_update(M, tmp_dir, dvc, remote):
+def test_partial_checkout_and_update(tmp_dir, dvc, remote):
     dir1 = {f"{i}.txt": f"dir1 {i}" for i in range(10)}
     dir2 = {f"{i}.txt": f"dir2 {i}" for i in range(10)}
     tmp_dir.gen({"dir": {"foo": "foo", "subdir": dir1, "subdir2": dir2}})

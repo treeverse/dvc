@@ -456,15 +456,17 @@ def _get_entries_not_in_remote(
             n += 1
             cb.set_size(n)
 
+        results = storage_map.bulk_remote_exists(
+            list(entries.values()), refresh=remote_refresh, callback=cb
+        )
         for key, entry in entries.items():
             k = (*key, "") if entry.meta and entry.meta.isdir else key
             try:
-                if not storage_map.remote_exists(entry, refresh=remote_refresh):
+                if not results.get(entry, False):
                     missing_entries.append(os.path.sep.join(k))
             except StorageKeyError:
                 pass
-            finally:
-                cb.relative_update()
+
     data_index.onerror = orig_data_index_onerror
     return missing_entries
 
