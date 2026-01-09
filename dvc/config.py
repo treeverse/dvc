@@ -148,8 +148,11 @@ class Config(dict):
             for level in ("system", "global")
         }
 
-        if self.dvc_dir is not None:
-            files["repo"] = self.fs.join(self.dvc_dir, self.CONFIG)
+        # For repo level, use local_dvc_dir if available (when fs is GitFileSystem),
+        # otherwise use dvc_dir (when fs is LocalFileSystem)
+        repo_dvc_dir = self.local_dvc_dir if self.local_dvc_dir else self.dvc_dir
+        if repo_dvc_dir is not None:
+            files["repo"] = self.wfs.join(repo_dvc_dir, self.CONFIG)
 
         if self.local_dvc_dir is not None:
             files["local"] = self.wfs.join(self.local_dvc_dir, self.CONFIG_LOCAL)
@@ -207,10 +210,13 @@ class Config(dict):
 
         self.update(conf)
 
-    def _get_fs(self, level):
-        # NOTE: this might be a Gitfs, which doesn't see things outside of
-        # the repo.
-        return self.fs if level == "repo" else self.wfs
+    def _get_fs(self, level):  # noqa: ARG002
+        # NOTE: Always use wfs (LocalFileSystem) for all config levels.
+        # - system/global: outside repo, must use wfs
+        # - repo/local: should read from current workspace, not git history
+        # This prevents loading incomplete configs from git history
+        # during gc --all-commits.
+        return self.wfs
 
     @staticmethod
     def load_file(path, fs=None) -> dict:

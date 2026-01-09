@@ -54,7 +54,8 @@ def test_get_fs(tmp_dir, scm):
     assert config.wfs != fs
     assert isinstance(config.wfs, LocalFileSystem)
 
-    assert config._get_fs("repo") == fs
+    #  repo should always use wfs
+    assert config._get_fs("repo") == config.wfs
     assert config._get_fs("local") == config.wfs
     assert config._get_fs("global") == config.wfs
     assert config._get_fs("system") == config.wfs
