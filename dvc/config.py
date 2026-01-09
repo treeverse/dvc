@@ -41,18 +41,6 @@ class RemoteNotFoundError(RemoteConfigError):
     pass
 
 
-class MachineConfigError(ConfigError):
-    pass
-
-
-class NoMachineError(MachineConfigError):
-    pass
-
-
-class MachineNotFoundError(MachineConfigError):
-    pass
-
-
 @memoize
 def get_compiled_schema():
     from voluptuous import Schema
