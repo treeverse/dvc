@@ -178,7 +178,7 @@ def parse_expr(s: str):
     from pyparsing import ParseException
 
     try:
-        result = get_parser().parseString(s, parseAll=True)
+        result = get_parser().parseString(s, parse_all=True)
     except ParseException as exc:
         format_and_raise_parse_error(exc)
         raise AssertionError("unreachable")  # noqa: B904
