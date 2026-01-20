@@ -247,6 +247,9 @@ class Config(dict):
 
         Returns:
             FileSystem to use for reading config
+
+        Raises:
+            ValueError: If level is not one of the valid config levels
         """
         # system/global are always outside repo, must use wfs
         if level in ("system", "global"):
@@ -264,8 +267,11 @@ class Config(dict):
             # Use dvc_dir: may be from git history or normal workspace
             return self.fs
 
-        # Fallback to wfs
-        return self.wfs
+        # Invalid level - this should never happen in practice as all callers
+        # access self.files[level] first, which will raise KeyError for invalid levels
+        raise ValueError(
+            f"Invalid config level: '{level}'. Must be one of {self.LEVELS}"
+        )
 
     @staticmethod
     def load_file(path, fs=None) -> dict:
