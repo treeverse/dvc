@@ -123,7 +123,7 @@ def try_expand_paths(fs: "FileSystem", paths: Iterable[str]) -> Iterator[str]:
             if fs.isdir(path):
                 yield from fs.find(path)
                 continue
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.debug(
                 "failed to expand %r: %s",
                 path,
