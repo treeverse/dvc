@@ -9,7 +9,7 @@ from typing import Optional
 import pytest
 from dulwich.porcelain import clone
 from funcy import first
-from packaging import version, specifiers
+from packaging import specifiers, version
 
 from dvc.types import StrPath
 
