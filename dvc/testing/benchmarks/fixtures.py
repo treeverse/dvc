@@ -9,7 +9,7 @@ from typing import Optional
 import pytest
 from dulwich.porcelain import clone
 from funcy import first
-from packaging import version
+from packaging import version, specifiers
 
 from dvc.types import StrPath
 
@@ -109,11 +109,19 @@ def make_dvc_bin(
             else:
                 pkg = "dvc"
             packages = [f"{pkg} @ git+file://{dvc_repo}@{dvc_rev}"]
-            try:
-                if version.Version(dvc_rev) < version.Version("3.50.3"):
-                    packages.append("pygit2==1.14.1")
-            except version.InvalidVersion:
-                pass
+
+            version_constraints = [
+                ("<3.50.3", ["pygit2==1.14.1"]),
+                ("<3.44.0", ["dulwich<1.0.0"]),
+            ]
+            for spec, pkgs in version_constraints:
+                try:
+                    _dvc_version = version.Version(dvc_rev)
+                except version.InvalidVersion:
+                    continue
+                if _dvc_version in specifiers.SpecifierSet(spec):
+                    packages.extend(pkgs)
+
             venv.install(*packages)
 
             dvc_venvs[dvc_rev] = venv
