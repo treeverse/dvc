@@ -1,3 +1,4 @@
+import threading
 from functools import wraps
 
 from funcy import decorator
@@ -47,6 +48,8 @@ def rwlocked(call, read=None, write=None):
 def unlocked_repo(f):
     @wraps(f)
     def wrapper(stage, *args, **kwargs):
+        if threading.current_thread() is not threading.main_thread():
+            return f(stage, *args, **kwargs)
         stage.repo.lock.unlock()
         stage.repo._reset()
         try:

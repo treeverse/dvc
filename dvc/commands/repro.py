@@ -40,6 +40,7 @@ class CmdRepro(CmdBase):
             "run_cache": not self.args.no_run_cache,
             "no_commit": self.args.no_commit,
             "glob": self.args.glob,
+            "jobs": self.args.jobs,
         }
 
 
@@ -187,5 +188,13 @@ def add_parser(subparsers, parent_parser):
             "Execute stage commands even if they have already been run with "
             "the same command/dependencies/outputs/etc before."
         ),
+    )
+    repro_parser.add_argument(
+        "-j",
+        "--jobs",
+        type=int,
+        default=1,
+        help="Run (at most) specified number of stages at a time in parallel.",
+        metavar="<number>",
     )
     repro_parser.set_defaults(func=CmdRepro)

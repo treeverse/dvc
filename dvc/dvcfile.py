@@ -1,5 +1,7 @@
 import contextlib
 import os
+import threading
+from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Optional, TypeVar, Union
 
 from dvc.exceptions import DvcException
@@ -77,6 +79,10 @@ def check_dvcfile_path(repo, path):
         raise FileIsGitIgnored(relpath(path), True)
 
 
+_file_locks: dict[str, threading.Lock] = defaultdict(threading.Lock)
+_file_locks_lock = threading.Lock()
+
+
 class FileMixin:
     SCHEMA: Callable[[_T], _T]
 
@@ -84,6 +90,10 @@ class FileMixin:
         self.repo = repo
         self.path = path
         self.verify = verify
+
+    def _thread_lock(self) -> threading.Lock:
+        with _file_locks_lock:
+            return _file_locks[self.path]
 
     def __repr__(self):
         return f"{self.__class__.__name__}: {relpath(self.path, self.repo.root_dir)}"
@@ -148,15 +158,19 @@ class FileMixin:
     def _load_yaml(self, **kwargs: Any) -> tuple[Any, str]:
         from dvc.utils import strictyaml
 
-        return strictyaml.load(
-            self.path,
-            self.SCHEMA,  # type: ignore[arg-type]
-            self.repo.fs,
-            **kwargs,
-        )
+        with self._thread_lock():
+            return strictyaml.load(
+                self.path,
+                self.SCHEMA,  # type: ignore[arg-type]
+                self.repo.fs,
+                **kwargs,
+            )
 
     def remove(self, force=False):  # noqa: ARG002
-        with contextlib.suppress(FileNotFoundError):
+        with (
+            self._thread_lock(),
+            contextlib.suppress(FileNotFoundError),
+        ):
             os.unlink(self.path)
 
     def dump(self, stage, **kwargs):
@@ -407,7 +421,10 @@ class Lockfile(FileMixin):
             return {}, ""
 
     def dump_dataset(self, dataset: dict):
-        with modify_yaml(self.path, fs=self.repo.fs) as data:
+        with (
+            self._thread_lock(),
+            modify_yaml(self.path, fs=self.repo.fs) as data,
+        ):
             data.update({"schema": "2.0"})
             if not data:
                 logger.info("Generating lock file '%s'", self.relpath)
@@ -430,7 +447,10 @@ class Lockfile(FileMixin):
 
         is_modified = False
         log_updated = False
-        with modify_yaml(self.path, fs=self.repo.fs) as data:
+        with (
+            self._thread_lock(),
+            modify_yaml(self.path, fs=self.repo.fs) as data,
+        ):
             if not data:
                 data.update({"schema": "2.0"})
                 # order is important, meta should always be at the top
@@ -468,7 +488,8 @@ class Lockfile(FileMixin):
         del data[stage.name]
 
         if data:
-            dump_yaml(self.path, d)
+            with self._thread_lock():
+                dump_yaml(self.path, d)
         else:
             self.remove()
 
