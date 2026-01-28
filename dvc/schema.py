@@ -80,7 +80,7 @@ PARAM_PSTAGE_NON_DEFAULT_SCHEMA = {str: [str]}
 VARS_SCHEMA = [str, dict]
 
 STAGE_DEFINITION = {
-    MATRIX_KWD: {str: vol.Any(str, list)},
+    MATRIX_KWD: {str: vol.Any(str, list, dict)},
     vol.Required(StageParams.PARAM_CMD): vol.Any(str, list),
     vol.Optional(StageParams.PARAM_WDIR): str,
     vol.Optional(StageParams.PARAM_DEPS): [str],
