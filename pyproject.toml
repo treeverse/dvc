@@ -59,7 +59,7 @@ dependencies = [
     "networkx>=2.5",
     "omegaconf",
     "packaging>=19",
-    "pathspec>=1.0.1,<2",
+    "pathspec>=0.10.3,<2",
     "platformdirs<5,>=3.1.1",
     "psutil>=5.8",
     "pydot>=1.2.4",

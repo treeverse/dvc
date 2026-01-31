@@ -5,7 +5,15 @@ from collections.abc import Iterable, Iterator
 from itertools import chain, groupby, takewhile
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Optional, Union, overload
 
-from pathspec.patterns.gitignore.spec import GitIgnoreSpecPattern
+try:
+    from pathspec.patterns.gitignore.spec import (  # type: ignore[import-not-found]
+        GitIgnoreSpecPattern,
+    )
+except ImportError:  # pathspec<1
+    from pathspec.patterns import (
+        GitWildMatchPattern as GitIgnoreSpecPattern,
+    )
+
 from pathspec.util import normalize_file
 from pygtrie import Trie
 
@@ -34,7 +42,14 @@ class DvcIgnorePatterns(DvcIgnore):
     def __init__(
         self, pattern_list: Iterable[Union[PatternInfo, str]], dirname: str, sep: str
     ) -> None:
-        from pathspec.patterns.gitignore.spec import _DIR_MARK
+        try:
+            from pathspec.patterns.gitignore.spec import (  # type: ignore[import-not-found]
+                _DIR_MARK,
+            )
+        except ImportError:  # pathspec<1
+            from pathspec.patterns.gitwildmatch import (  # type: ignore[attr-defined, no-redef]
+                _DIR_MARK,
+            )
 
         pattern_infos = [
             pattern if isinstance(pattern, PatternInfo) else PatternInfo(pattern, "")
