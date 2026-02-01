@@ -113,6 +113,7 @@ def make_dvc_bin(
             version_constraints = [
                 ("<3.50.3", ["pygit2==1.14.1"]),
                 ("<3.44.0", ["dulwich<1.0.0"]),
+                ("<3.67.0", ["pathspec<1"]),
             ]
             for spec, pkgs in version_constraints:
                 try:
