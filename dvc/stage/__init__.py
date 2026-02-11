@@ -385,7 +385,8 @@ class Stage(params.StageParams):
 
     def unprotect_outs(self) -> None:
         for out in self.outs:
-            out.unprotect()
+            if out.use_cache:
+                out.unprotect()
 
     def ignore_remove_outs(self) -> None:
         for out in self.outs:
