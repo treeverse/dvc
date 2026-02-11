@@ -10,6 +10,8 @@ from dvc.utils import relpath
 from dvc.utils.collections import ensure_list
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     from dvc.repo import Repo
     from dvc.scm import Base
 
@@ -131,7 +133,7 @@ class SCMContext:
 
         self.files_to_track = set()
 
-    def __enter__(self) -> "SCMContext":
+    def __enter__(self) -> "Self":
         self._cm = self()
         return self._cm.__enter__()
 

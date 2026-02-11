@@ -47,7 +47,7 @@ def test_help(caplog, capsys, command_tuples):
     out, err = capsys.readouterr()
 
     # validate metavars are all in lowercase
-    usage = "\n".join(takewhile(lambda o: bool(o), out.splitlines()))
+    usage = "\n".join(takewhile(bool, out.splitlines()))
 
     message = (
         "metavars not lowercased, you are likely missing formatter_class=XXX "
