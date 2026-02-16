@@ -1,4 +1,5 @@
 import os
+from importlib.metadata import entry_points
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -280,6 +281,38 @@ REMOTE_SCHEMAS = {
     "webdavs": WEBDAV_COMMON | REMOTE_COMMON,
     "remote": {str: object},  # Any of the above options are valid
 }
+
+
+def _discover_plugin_schemas():
+    """Discover remote config schemas from installed DVC filesystem plugins.
+
+    Plugins can declare a ``REMOTE_CONFIG`` class attribute (a dict of
+    config keys and their voluptuous validators) on their filesystem class.
+    This function loads all ``dvc.fs`` entry points, checks for that
+    attribute, and merges the schema into ``REMOTE_SCHEMAS`` so that
+    ``ByUrl`` accepts the plugin's URL scheme.
+
+    Existing (hardcoded) schemes are never overwritten.
+    """
+    for ep in entry_points(group="dvc.fs"):
+        try:
+            cls = ep.load()
+        except Exception:  # noqa: BLE001
+            continue
+
+        remote_config = getattr(cls, "REMOTE_CONFIG", None)
+        if not remote_config:
+            continue
+
+        protocol = getattr(cls, "protocol", ep.name)
+        # protocol may be a string or tuple of strings
+        schemes = (protocol,) if isinstance(protocol, str) else protocol
+        for scheme in schemes:
+            if scheme not in REMOTE_SCHEMAS:
+                REMOTE_SCHEMAS[scheme] = {**remote_config, **REMOTE_COMMON}
+
+
+_discover_plugin_schemas()
 
 SCHEMA = {
     "core": {
