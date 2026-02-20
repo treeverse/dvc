@@ -5,6 +5,7 @@ class attribute to register their URL scheme and config options with
 DVC's config validation, without requiring changes to DVC core.
 """
 
+from typing import ClassVar
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -14,7 +15,7 @@ class FakePluginFS:
     """Minimal filesystem class that declares REMOTE_CONFIG."""
 
     protocol = "myplugin"
-    REMOTE_CONFIG = {
+    REMOTE_CONFIG: ClassVar[dict] = {
         "token": str,
         "endpoint_url": str,
     }
@@ -30,7 +31,7 @@ class FakePluginMultiProtocol:
     """Filesystem class with tuple protocol."""
 
     protocol = ("myproto", "myprotos")
-    REMOTE_CONFIG = {
+    REMOTE_CONFIG: ClassVar[dict] = {
         "api_key": str,
     }
 
@@ -48,7 +49,7 @@ class TestDiscoverPluginSchemas:
 
     def test_plugin_schema_registered(self):
         """A plugin with REMOTE_CONFIG gets its scheme added to REMOTE_SCHEMAS."""
-        from dvc.config_schema import REMOTE_COMMON, REMOTE_SCHEMAS
+        from dvc.config_schema import REMOTE_SCHEMAS
 
         eps = [_make_entry_point("myplugin", FakePluginFS)]
         with patch("dvc.config_schema.entry_points", return_value=eps):
@@ -92,7 +93,7 @@ class TestDiscoverPluginSchemas:
 
         class FakeS3:
             protocol = "s3"
-            REMOTE_CONFIG = {"fake_key": str}
+            REMOTE_CONFIG: ClassVar[dict] = {"fake_key": str}
 
         eps = [_make_entry_point("s3", FakeS3)]
         with patch("dvc.config_schema.entry_points", return_value=eps):
@@ -149,7 +150,7 @@ class TestByUrlWithPlugin:
 
     def test_byurl_validates_plugin_scheme(self):
         """ByUrl should accept a URL with a plugin-registered scheme."""
-        from dvc.config_schema import ByUrl, REMOTE_COMMON, REMOTE_SCHEMAS
+        from dvc.config_schema import REMOTE_COMMON, REMOTE_SCHEMAS, ByUrl
 
         # Register a fake scheme
         REMOTE_SCHEMAS["testplugin"] = {"token": str, **REMOTE_COMMON}
@@ -167,7 +168,7 @@ class TestByUrlWithPlugin:
         """ByUrl should reject an unregistered scheme."""
         from voluptuous import Invalid as VoluptuousInvalid
 
-        from dvc.config_schema import ByUrl, REMOTE_SCHEMAS
+        from dvc.config_schema import REMOTE_SCHEMAS, ByUrl
 
         validator = ByUrl(REMOTE_SCHEMAS)
 

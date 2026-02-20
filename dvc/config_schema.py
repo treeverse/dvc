@@ -297,7 +297,7 @@ def _discover_plugin_schemas():
     for ep in entry_points(group="dvc.fs"):
         try:
             cls = ep.load()
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001,S112
             continue
 
         remote_config = getattr(cls, "REMOTE_CONFIG", None)
