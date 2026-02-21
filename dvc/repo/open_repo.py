@@ -213,6 +213,7 @@ def _clone_default_branch(url, rev):
 
 def _pull(git: "Git", unshallow: bool = False):
     from scmrepo.exceptions import SCMError
+
     from dvc.repo.experiments.utils import fetch_all_exps
     from dvc.scm import GitAuthError
 
@@ -224,27 +225,26 @@ def _pull(git: "Git", unshallow: bool = False):
         # Check if the error is authentication-related
         error_msg = str(exc).lower()
         auth_keywords = [
-            'authentication failed',
-            'could not read username',
-            'could not read password', 
-            'bad credentials',
-            'invalid credentials',
-            'access denied',
-            'permission denied (publickey)',
-            'repository access denied',
-            'authentication required',
-            'http 401',
-            'http 403',
-            'fatal: unable to access'
+            "authentication failed",
+            "could not read username",
+            "could not read password",
+            "bad credentials",
+            "invalid credentials",
+            "access denied",
+            "permission denied (publickey)",
+            "repository access denied",
+            "authentication required",
+            "http 401",
+            "http 403",
+            "fatal: unable to access",
         ]
-        
+
         if any(keyword in error_msg for keyword in auth_keywords):
             raise GitAuthError(
                 f"Git authentication failed during fetch: {exc}"
             ) from exc
-        else:
-            # Re-raise non-authentication SCM errors
-            raise
+        # Re-raise non-authentication SCM errors
+        raise
 
 
 def _merge_upstream(git: "Git"):
