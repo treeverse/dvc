@@ -52,7 +52,7 @@ class TestDiscoverPluginSchemas:
         from dvc.config_schema import REMOTE_SCHEMAS
 
         eps = [_make_entry_point("myplugin", FakePluginFS)]
-        with patch("dvc.config_schema.entry_points", return_value=eps):
+        with patch("dvc.config_schema._get_dvc_fs_entry_points", return_value=eps):
             # Clear any prior registration from this test key
             REMOTE_SCHEMAS.pop("myplugin", None)
 
@@ -76,7 +76,7 @@ class TestDiscoverPluginSchemas:
         from dvc.config_schema import REMOTE_SCHEMAS
 
         eps = [_make_entry_point("noplugin", FakePluginNoConfig)]
-        with patch("dvc.config_schema.entry_points", return_value=eps):
+        with patch("dvc.config_schema._get_dvc_fs_entry_points", return_value=eps):
             REMOTE_SCHEMAS.pop("noplugin", None)
 
             from dvc.config_schema import _discover_plugin_schemas
@@ -96,7 +96,7 @@ class TestDiscoverPluginSchemas:
             REMOTE_CONFIG: ClassVar[dict] = {"fake_key": str}
 
         eps = [_make_entry_point("s3", FakeS3)]
-        with patch("dvc.config_schema.entry_points", return_value=eps):
+        with patch("dvc.config_schema._get_dvc_fs_entry_points", return_value=eps):
             from dvc.config_schema import _discover_plugin_schemas
 
             _discover_plugin_schemas()
@@ -113,7 +113,7 @@ class TestDiscoverPluginSchemas:
         ep.name = "broken"
         ep.load.side_effect = ImportError("missing dependency")
 
-        with patch("dvc.config_schema.entry_points", return_value=[ep]):
+        with patch("dvc.config_schema._get_dvc_fs_entry_points", return_value=[ep]):
             REMOTE_SCHEMAS.pop("broken", None)
 
             from dvc.config_schema import _discover_plugin_schemas
@@ -127,7 +127,7 @@ class TestDiscoverPluginSchemas:
         from dvc.config_schema import REMOTE_SCHEMAS
 
         eps = [_make_entry_point("myproto", FakePluginMultiProtocol)]
-        with patch("dvc.config_schema.entry_points", return_value=eps):
+        with patch("dvc.config_schema._get_dvc_fs_entry_points", return_value=eps):
             REMOTE_SCHEMAS.pop("myproto", None)
             REMOTE_SCHEMAS.pop("myprotos", None)
 

@@ -284,6 +284,17 @@ REMOTE_SCHEMAS = {
 }
 
 
+def _get_dvc_fs_entry_points():
+    """Return installed dvc.fs entry points, compatible with Python 3.9+.
+
+    ``entry_points(group=...)`` was added in Python 3.10; on 3.9 we use
+    the dict-based ``entry_points().get(group, [])`` API instead.
+    """
+    if sys.version_info >= (3, 10):
+        return entry_points(group="dvc.fs")
+    return entry_points().get("dvc.fs", [])  # type: ignore[call-arg]
+
+
 def _discover_plugin_schemas():
     """Discover remote config schemas from installed DVC filesystem plugins.
 
@@ -295,12 +306,7 @@ def _discover_plugin_schemas():
 
     Existing (hardcoded) schemes are never overwritten.
     """
-    # entry_points(group=...) requires Python 3.10+; use dict API on 3.9
-    if sys.version_info >= (3, 10):
-        eps = entry_points(group="dvc.fs")
-    else:
-        eps = entry_points().get("dvc.fs", [])  # type: ignore[call-arg]
-    for ep in eps:
+    for ep in _get_dvc_fs_entry_points():
         try:
             cls = ep.load()
         except Exception:  # noqa: BLE001,S112
