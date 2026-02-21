@@ -292,7 +292,7 @@ def _get_dvc_fs_entry_points():
     """
     if sys.version_info >= (3, 10):
         return entry_points(group="dvc.fs")
-    return entry_points().get("dvc.fs", [])  # type: ignore[call-arg]
+    return entry_points().get("dvc.fs", [])  # type: ignore[call-arg,unreachable]
 
 
 def _discover_plugin_schemas():
