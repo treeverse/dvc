@@ -1,4 +1,5 @@
 import os
+import sys
 from importlib.metadata import entry_points
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
@@ -294,7 +295,12 @@ def _discover_plugin_schemas():
 
     Existing (hardcoded) schemes are never overwritten.
     """
-    for ep in entry_points(group="dvc.fs"):
+    # entry_points(group=...) requires Python 3.10+; use dict API on 3.9
+    if sys.version_info >= (3, 10):
+        eps = entry_points(group="dvc.fs")
+    else:
+        eps = entry_points().get("dvc.fs", [])  # type: ignore[call-arg]
+    for ep in eps:
         try:
             cls = ep.load()
         except Exception:  # noqa: BLE001,S112
