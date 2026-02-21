@@ -155,7 +155,29 @@ def clone(url: str, to_path: str, **kwargs):
                 fetch_all_exps(git, url, progress=pbar.update_git)
             return git
         except InternalCloneError as exc:
-            raise CloneError("SCM error") from exc
+            # Check if the error is authentication-related
+            error_msg = str(exc).lower()
+            auth_keywords = [
+                'authentication failed',
+                'could not read username',
+                'could not read password', 
+                'bad credentials',
+                'invalid credentials',
+                'access denied',
+                'permission denied (publickey)',
+                'repository access denied',
+                'authentication required',
+                'http 401',
+                'http 403',
+                'fatal: unable to access'
+            ]
+            
+            if any(keyword in error_msg for keyword in auth_keywords):
+                raise GitAuthError(
+                    f"Git authentication failed when cloning '{url}': {exc}"
+                ) from exc
+            else:
+                raise CloneError(f"Failed to clone '{url}': {exc}") from exc
 
 
 def resolve_rev(scm: Union["Git", "NoSCM"], rev: str) -> str:
