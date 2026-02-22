@@ -144,7 +144,8 @@ class TqdmGit(Tqdm):
 
 
 def clone(url: str, to_path: str, **kwargs):
-    from scmrepo.exceptions import AuthError, CloneError as InternalCloneError
+    from scmrepo.exceptions import AuthError
+    from scmrepo.exceptions import CloneError as InternalCloneError
 
     from dvc.repo.experiments.utils import fetch_all_exps
 

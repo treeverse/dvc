@@ -221,9 +221,9 @@ def _pull(git: "Git", unshallow: bool = False):
         git.fetch(unshallow=unshallow)
     except AuthError as exc:
         raise GitAuthError(str(exc)) from exc
-    
+
     _merge_upstream(git)
-    
+
     try:
         fetch_all_exps(git, "origin")
     except AuthError as exc:
