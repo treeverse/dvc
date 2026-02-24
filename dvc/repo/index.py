@@ -69,7 +69,16 @@ def collect_files(
 
     def is_ignored(path: str) -> bool:
         # apply only for the local fs
-        return is_local_fs and scm.is_ignored(path)
+        if not is_local_fs:
+            return False
+        
+        # For DVC files, use DVC's ignore system which properly handles
+        # ** globbing patterns with negations (e.g., data/** + !data/**/*.dvc)
+        if is_valid_filename(path):
+            return repo.dvcignore.is_ignored_file(path)
+        
+        # For other files, use Git's ignore system
+        return scm.is_ignored(path)
 
     def is_dvcfile_and_not_ignored(root: str, file: str) -> bool:
         return is_valid_filename(file) and not is_ignored(f"{root}{sep}{file}")
