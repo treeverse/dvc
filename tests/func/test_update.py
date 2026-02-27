@@ -461,3 +461,24 @@ def test_update_import_url_to_remote_directory_same_hash(
         "bar": {"baz": "foo"},
         "same": "same",
     }
+
+
+def test_update_import_cache_false_no_gitignore(tmp_dir, dvc, scm, erepo_dir):
+    with erepo_dir.chdir():
+        erepo_dir.scm_gen({"file": "content"}, commit="add file")
+
+    stage = dvc.imp(os.fspath(erepo_dir), "file", "imported_file")
+    stage.outs[0].use_cache = False
+    stage.dump()
+
+    # Remove "imported_file" from .gitignore
+    ignore_file = tmp_dir / ".gitignore"
+    ignore_file.write_text("")
+
+    with erepo_dir.chdir():
+        erepo_dir.scm_gen("file", "new content", commit="update file")
+
+    dvc.update([stage.path])
+
+    assert (tmp_dir / "imported_file").read_text() == "new content"
+    assert "imported_file" not in ignore_file.read_text()
