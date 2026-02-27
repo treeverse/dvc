@@ -212,11 +212,22 @@ def _clone_default_branch(url, rev):
 
 
 def _pull(git: "Git", unshallow: bool = False):
-    from dvc.repo.experiments.utils import fetch_all_exps
+    from scmrepo.exceptions import AuthError
 
-    git.fetch(unshallow=unshallow)
+    from dvc.repo.experiments.utils import fetch_all_exps
+    from dvc.scm import GitAuthError
+
+    try:
+        git.fetch(unshallow=unshallow)
+    except AuthError as exc:
+        raise GitAuthError(str(exc)) from exc
+
     _merge_upstream(git)
-    fetch_all_exps(git, "origin")
+
+    try:
+        fetch_all_exps(git, "origin")
+    except AuthError as exc:
+        raise GitAuthError(str(exc)) from exc
 
 
 def _merge_upstream(git: "Git"):

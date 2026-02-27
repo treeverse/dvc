@@ -144,6 +144,7 @@ class TqdmGit(Tqdm):
 
 
 def clone(url: str, to_path: str, **kwargs):
+    from scmrepo.exceptions import AuthError
     from scmrepo.exceptions import CloneError as InternalCloneError
 
     from dvc.repo.experiments.utils import fetch_all_exps
@@ -154,6 +155,8 @@ def clone(url: str, to_path: str, **kwargs):
             if "shallow_branch" not in kwargs:
                 fetch_all_exps(git, url, progress=pbar.update_git)
             return git
+        except AuthError as exc:
+            raise GitAuthError(str(exc)) from exc
         except InternalCloneError as exc:
             raise CloneError("SCM error") from exc
 
