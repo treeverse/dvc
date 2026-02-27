@@ -757,7 +757,7 @@ class BaseExecutor(ABC):
             logger.debug("Commit to current experiment branch '%s'", branch)
         else:
             baseline_rev = scm.get_ref(EXEC_BASELINE)
-            name = exp_name if exp_name else f"exp-{exp_hash[:5]}"
+            name = exp_name or f"exp-{exp_hash[:5]}"
             ref_info = ExpRefInfo(baseline_rev, name)
             branch = str(ref_info)
             old_ref = None

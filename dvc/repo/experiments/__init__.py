@@ -188,7 +188,7 @@ class Experiments:
         rev_names = self.get_exact_name(revs)
         for rev in revs:
             name = rev_names[rev]
-            names.append(name if name else rev[:7])
+            names.append(name or rev[:7])
         ui.write("\nRan experiment(s): {}".format(", ".join(names)))
         if tmp_dir:
             ui.write(

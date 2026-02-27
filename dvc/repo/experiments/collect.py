@@ -328,7 +328,7 @@ def collect(
                 name=baseline_names.get(baseline_rev),
                 data=baseline_data.data,
                 error=baseline_data.error,
-                experiments=experiments if experiments else None,
+                experiments=experiments or None,
             )
         )
     return result

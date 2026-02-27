@@ -53,7 +53,7 @@ def test_new_simple(tmp_dir, scm, dvc, exp_stage, mocker, name, workspace):
     if workspace:
         assert (tmp_dir / "metrics.yaml").read_text().strip() == "foo: 2"
 
-    exp_name = name if name else ref_info.name
+    exp_name = name or ref_info.name
     assert dvc.experiments.get_exact_name([exp])[exp] == exp_name
     assert resolve_rev(scm, exp_name) == exp
 

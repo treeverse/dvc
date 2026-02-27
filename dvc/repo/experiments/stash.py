@@ -67,7 +67,7 @@ class ExpStash(Stash):
         branch: Optional[str] = None,
     ) -> str:
         msg = cls.MESSAGE_FORMAT.format(
-            rev=rev, baseline_rev=baseline_rev, name=name if name else ""
+            rev=rev, baseline_rev=baseline_rev, name=name or ""
         )
         branch_msg = f":{branch}" if branch else ""
         return f"{msg}{branch_msg}"
@@ -124,9 +124,7 @@ class ApplyStash(Stash):
 
     @classmethod
     def format_message(cls, head_rev: str, rev: str, name: Optional[str] = None) -> str:
-        return cls.MESSAGE_FORMAT.format(
-            head_rev=head_rev, rev=rev, name=name if name else ""
-        )
+        return cls.MESSAGE_FORMAT.format(head_rev=head_rev, rev=rev, name=name or "")
 
     @contextmanager
     def preserve_workspace(

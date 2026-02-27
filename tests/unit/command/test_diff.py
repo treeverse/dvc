@@ -196,7 +196,7 @@ def test_diff_show_markdown_and_hash(mocker, show_hash, dvc):
     cmd = args.func(args)
 
     diff = {}
-    show_hash = show_hash if show_hash else False
+    show_hash = show_hash or False
     mock_show_markdown = mocker.patch("dvc.commands.diff._show_markdown")
     mocker.patch("dvc.repo.Repo.diff", return_value=diff.copy())
 
