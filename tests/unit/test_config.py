@@ -60,6 +60,81 @@ def test_get_fs(tmp_dir, scm):
     assert config._get_fs("system") == config.wfs
 
 
+def test_should_prefer_local_dvc_dir(tmp_dir, scm):
+    """Test _should_prefer_local_dvc_dir property logic."""
+    tmp_dir.scm_gen("foo", "foo", commit="add foo")
+
+    # Scenario 1: Normal workspace (local_dvc_dir == dvc_dir)
+    config = Config(dvc_dir=str(tmp_dir / ".dvc"), local_dvc_dir=str(tmp_dir / ".dvc"))
+    assert not config._should_prefer_local_dvc_dir
+
+    # Scenario 2: Repo(rev="...") (local_dvc_dir is None)
+    fs = scm.get_fs("master")
+    config = Config(dvc_dir="/.dvc", local_dvc_dir=None, fs=fs)
+    assert not config._should_prefer_local_dvc_dir
+
+    # Scenario 3: Brancher (local_dvc_dir != dvc_dir, workspace has config)
+    dvc_dir = tmp_dir / ".dvc"
+    dvc_dir.mkdir()
+    (dvc_dir / "config").write_text(
+        """
+        [core]
+            analytics = false
+        """
+    )
+
+    fs = scm.get_fs("master")
+    config = Config(dvc_dir="/.dvc", local_dvc_dir=str(dvc_dir), fs=fs)
+    assert config._should_prefer_local_dvc_dir
+
+    # Scenario 4: Repo(rev="...") with workspace dir but no config
+    dvc_dir2 = tmp_dir / ".dvc2"
+    dvc_dir2.mkdir()
+
+    config = Config(dvc_dir="/.dvc", local_dvc_dir=str(dvc_dir2), fs=fs)
+    assert not config._should_prefer_local_dvc_dir
+
+
+def test_get_fs_brancher_scenario(tmp_dir, scm):
+    """Test _get_fs returns wfs when in brancher scenario."""
+    tmp_dir.scm_gen("foo", "foo", commit="add foo")
+
+    # Create workspace config
+    dvc_dir = tmp_dir / ".dvc"
+    dvc_dir.mkdir()
+    (dvc_dir / "config").write_text(
+        """
+        [core]
+            analytics = false
+        """
+    )
+
+    # Simulate brancher scenario: fs is GitFileSystem but
+    # local_dvc_dir points to workspace
+    fs = scm.get_fs("master")
+    config = Config(
+        dvc_dir="/.dvc",  # git path
+        local_dvc_dir=str(dvc_dir),  # workspace path
+        fs=fs,
+    )
+
+    # Should prefer local_dvc_dir
+    assert config._should_prefer_local_dvc_dir
+    assert config._get_fs("repo") == config.wfs
+    assert config._get_fs("local") == config.wfs
+    assert config._get_fs("global") == config.wfs
+    assert config._get_fs("system") == config.wfs
+
+
+def test_get_fs_invalid_level(tmp_dir, dvc):
+    """Test _get_fs raises ValueError for invalid config level."""
+    config = Config.from_cwd(validate=False)
+
+    # Test that passing an invalid level raises ValueError
+    with pytest.raises(ValueError, match="Invalid config level: 'invalid'"):
+        config._get_fs("invalid")
+
+
 def test_s3_ssl_verify(tmp_dir, dvc):
     config = Config.from_cwd(validate=False)
     with config.edit() as conf:
