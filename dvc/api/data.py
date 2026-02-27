@@ -291,7 +291,8 @@ def _open(
                 fs_path = path
             else:
                 fs = DVCFileSystem(repo=_repo, subrepos=True)
-                fs_path = fs.from_os_path(path)
+                rel_path = fs.from_os_path(path)
+                fs_path = fs.join(fs.root_marker, rel_path)
 
             try:
                 with fs.open(fs_path, mode=mode, encoding=encoding) as fobj:
