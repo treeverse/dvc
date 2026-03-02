@@ -8,7 +8,7 @@ from PyInstaller.utils.hooks import collect_submodules, is_module_or_submodule
 _EXCLUDES = ("celery.bin", "celery.contrib")
 hiddenimports = collect_submodules(
     "celery",
-    filter=lambda name: not any(
-        is_module_or_submodule(name, module) for module in _EXCLUDES
+    filter=lambda name: (
+        not any(is_module_or_submodule(name, module) for module in _EXCLUDES)
     ),
 )

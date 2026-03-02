@@ -34,7 +34,7 @@ class ExpRefInfo:
 
     def __init__(self, baseline_sha: str, name: Optional[str] = None):
         self.baseline_sha = baseline_sha
-        self.name: str = name if name else ""
+        self.name: str = name or ""
 
     def __str__(self):
         return "/".join(self.parts)
