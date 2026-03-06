@@ -21,7 +21,7 @@ def test_commit_recursive(tmp_dir, dvc):
     assert dvc.status() == {}
 
 
-def test_commit_force(tmp_dir, dvc):
+def test_commit_force(tmp_dir, dvc, mocker):
     tmp_dir.gen({"dir": {"file": "text1", "file2": "text2"}})
     (stage,) = dvc.add("dir", no_commit=True)
 
@@ -30,6 +30,8 @@ def test_commit_force(tmp_dir, dvc):
     tmp_dir.gen("dir/file", "file content modified")
 
     assert stage.outs[0].changed_cache()
+
+    mocker.patch("dvc.ui.ui.prompt", return_value="n")
 
     with pytest.raises(StageCommitError):
         dvc.commit(stage.path)
@@ -104,7 +106,7 @@ def test_commit_with_deps(tmp_dir, dvc, run_copy):
     assert not stage.outs[0].changed_cache()
 
 
-def test_commit_changed_md5(tmp_dir, dvc):
+def test_commit_changed_md5(tmp_dir, dvc, mocker):
     tmp_dir.gen({"file": "file content"})
     (stage,) = dvc.add("file", no_commit=True)
 
@@ -112,11 +114,25 @@ def test_commit_changed_md5(tmp_dir, dvc):
     stage_file_content["md5"] = "1111111111"
     (tmp_dir / stage.path).dump(stage_file_content)
 
+    mocker.patch("dvc.ui.ui.prompt", return_value="n")
+
     with pytest.raises(StageCommitError):
         dvc.commit(stage.path)
 
     dvc.commit(stage.path, force=True)
     assert "md5" not in (tmp_dir / stage.path).parse()
+
+
+def test_commit_skip(tmp_dir, dvc, mocker):
+    tmp_dir.gen("foo", "foo")
+    (stage,) = dvc.add("foo", no_commit=True)
+    tmp_dir.gen("foo", "bar")
+
+    mocker.patch("dvc.ui.ui.prompt", return_value="s")
+
+    dvc.commit(stage.path)
+
+    assert dvc.status()
 
 
 def test_commit_no_exec(tmp_dir, dvc):

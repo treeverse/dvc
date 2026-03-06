@@ -1,8 +1,6 @@
 from itertools import groupby
 from typing import TYPE_CHECKING
 
-from dvc import prompt
-
 from . import locked
 from .scm_context import scm_context
 
@@ -35,11 +33,15 @@ def _prepare_message(stage, changes):
 
 def prompt_to_commit(stage, changes, force=False):
     from dvc.stage.exceptions import StageCommitError
+    from dvc.ui import ui
 
-    if not (force or prompt.confirm(_prepare_message(stage, changes))):
+    msg = _prepare_message(stage, changes)
+    answer = "y" if force else ui.prompt(msg, choices=["y", "n", "s"])
+    if answer == "n":
         raise StageCommitError(
             f"unable to commit changed {stage}. Use `-f|--force` to force."
         )
+    return answer
 
 
 @locked
@@ -74,7 +76,8 @@ def commit(
             else:
                 changes = stage.changed_entries()
                 if any(changes):
-                    prompt_to_commit(stage, changes, force=force)
+                    if prompt_to_commit(stage, changes, force=force) == "s":
+                        continue
                     stage.save(allow_missing=allow_missing)
             stage.commit(
                 filter_info=stage_info.filter_info,
