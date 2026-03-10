@@ -92,6 +92,27 @@ def test_gc_multiple_dvc_repos(tmp_dir, scm, dvc, erepo_dir):
     assert len(list(odb.all())) == 2
 
 
+def test_gc_multiple_dvc_repos_all_branches_num(tmp_dir, scm, dvc, erepo_dir):
+    tmp_dir.dvc_gen("main", "main", commit="main")
+
+    erepo_dir.dvc.cache.local.path = dvc.cache.local.path
+    with erepo_dir.chdir():
+        erepo_dir.scm_gen("base", "base", commit="base")
+        with erepo_dir.branch("feature", new=True):
+            erepo_dir.dvc_gen("shared", "feature-v1", commit="feature-v1")
+            erepo_dir.dvc.remove("shared.dvc")
+            erepo_dir.dvc_gen("shared", "feature-v2", commit="feature-v2")
+
+    odb = dvc.cache.local
+    assert len(list(odb.all())) == 3
+
+    dvc.gc(all_branches=True, num=2, repos=[erepo_dir])
+    assert len(list(odb.all())) == 3
+
+    dvc.gc(all_branches=True, repos=[erepo_dir])
+    assert len(list(odb.all())) == 2
+
+
 def test_all_commits(tmp_dir, scm, dvc):
     tmp_dir.dvc_gen("testfile", "uncommitted")
     tmp_dir.dvc_gen("testfile", "committed", commit="committed")

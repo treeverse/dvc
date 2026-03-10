@@ -47,6 +47,13 @@ def test_iter_revs(tmp_dir, scm, mocker):
     assert gen == {rev_old: ["tag"]}
     gen = iter_revs(scm, all_branches=True)
     assert gen == {rev_old: [old], rev_new: ["new"], rev_other: ["other"]}
+    gen = iter_revs(scm, all_branches=True, num=2)
+    assert gen == {
+        rev_old: [old, rev_old],
+        rev_root: [rev_root],
+        rev_new: ["new"],
+        rev_other: ["other"],
+    }
     gen = iter_revs(scm, all_tags=True)
     assert gen == {rev_old: ["tag"]}
     gen = iter_revs(scm, all_commits=True)

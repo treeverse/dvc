@@ -234,7 +234,7 @@ def iter_revs(
         results.extend(scm.list_all_commits())
     else:
         if all_branches:
-            results.extend(scm.list_branches())
+            results.extend(_get_n_commits(scm, scm.list_branches(), num))
 
         if all_tags:
             results.extend(scm.list_tags())
@@ -258,7 +258,10 @@ def iter_revs(
         results.extend(exp_commits(scm))
 
     rev_resolver = partial(resolve_rev, scm)
-    return group_by(rev_resolver, results)
+    grouped = group_by(rev_resolver, results)
+    for rev, names in grouped.items():
+        grouped[rev] = list(dict.fromkeys(names))
+    return grouped
 
 
 def lfs_prefetch(fs: "FileSystem", paths: list[str]):

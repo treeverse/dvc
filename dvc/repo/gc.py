@@ -28,8 +28,10 @@ def _validate_args(**kwargs):
             "`--all-experiments`, `--all-commits`, `--date` or `--rev` "
             "needs to be set."
         )
-    if kwargs.get("num") and not kwargs.get("rev"):
-        raise InvalidArgumentError("`--num` can only be used alongside `--rev`")
+    if kwargs.get("num") and not (kwargs.get("rev") or kwargs.get("all_branches")):
+        raise InvalidArgumentError(
+            "`--num` can only be used alongside `--rev` or `--all-branches`"
+        )
 
 
 def _used_obj_ids_not_in_remote(
