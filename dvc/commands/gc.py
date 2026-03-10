@@ -40,9 +40,16 @@ class CmdGC(CmdBase):
             msg += " and all git commits"
         else:
             if self.args.all_branches and self.args.all_tags:
-                msg += " and all git branches and tags"
+                if self.args.num:
+                    msg += f" and last {self.args.num} commits from all git branches"
+                    msg += " and all git tags"
+                else:
+                    msg += " and all git branches and tags"
             elif self.args.all_branches:
-                msg += " and all git branches"
+                if self.args.num:
+                    msg += f" and last {self.args.num} commits from all git branches"
+                else:
+                    msg += " and all git branches"
             elif self.args.all_tags:
                 msg += " and all git tags"
             if self.args.commit_date:
@@ -126,8 +133,8 @@ def add_parser(subparsers, parent_parser):
         metavar="<num>",
         help=(
             "Keep data files used in the last `num` commits "
-            "starting from the `--rev` <commit>. "
-            "Only used if `--rev` is also provided. "
+            "starting from each selected revision root. "
+            "Can be used with `--rev` and `--all-branches`. "
             "Defaults to `1`."
         ),
     )

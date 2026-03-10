@@ -65,6 +65,30 @@ def test_(dvc, scm, mocker):
     with pytest.raises(InvalidArgumentError):
         cmd.run()
 
+    cli_args = parse_args(["gc", "--all-branches", "--num", "2", "--force"])
+    cmd = cli_args.func(cli_args)
+
+    assert cmd.run() == 0
+
+    m.assert_called_with(
+        workspace=False,
+        all_tags=False,
+        all_branches=True,
+        all_commits=False,
+        all_experiments=False,
+        commit_date=None,
+        cloud=False,
+        remote=None,
+        force=True,
+        jobs=None,
+        repos=None,
+        rev=None,
+        num=2,
+        not_in_remote=False,
+        dry=False,
+        skip_failed=False,
+    )
+
     cli_args = parse_args(["gc", "--cloud", "--not-in-remote"])
     cmd = cli_args.func(cli_args)
     with pytest.raises(InvalidArgumentError):
