@@ -64,10 +64,16 @@ def _diff(old, new, data_keys, with_missing=False):
                 {"path": _path(change.old), "hash": _hash(change.old)}
             )
         elif change.typ == MODIFY:
+            old_hash = _hash(change.old)
+            new_hash = _hash(change.new)
+            # Skip reporting as modified if the hash hasn't changed
+            # This can happen when the parent .dir changes but individual files don't
+            if old_hash == new_hash:
+                continue
             ret["modified"].append(
                 {
                     "path": _path(change.old),
-                    "hash": {"old": _hash(change.old), "new": _hash(change.new)},
+                    "hash": {"old": old_hash, "new": new_hash},
                 }
             )
         elif change.typ == RENAME:
