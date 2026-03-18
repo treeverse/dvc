@@ -37,13 +37,13 @@ KEYCRE = re.compile(
 def get_parser():
     from pyparsing import CharsNotIn, ParserElement, Suppress, ZeroOrMore
 
-    ParserElement.enablePackrat()
+    ParserElement.enable_packrat()
 
     word = CharsNotIn(f"{PERIOD}{LBRACK}{RBRACK}")
     idx = Suppress(LBRACK) + word + Suppress(RBRACK)
     attr = Suppress(PERIOD) + word
     parser = word + ZeroOrMore(attr ^ idx)
-    parser.setParseAction(PERIOD.join)
+    parser.set_parse_action(PERIOD.join)
 
     return parser
 
@@ -178,7 +178,7 @@ def parse_expr(s: str):
     from pyparsing import ParseException
 
     try:
-        result = get_parser().parseString(s, parse_all=True)
+        result = get_parser().parse_string(s, parse_all=True)
     except ParseException as exc:
         format_and_raise_parse_error(exc)
         raise AssertionError("unreachable")  # noqa: B904
