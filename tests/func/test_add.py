@@ -1057,3 +1057,14 @@ def test_add_updates_to_cloud_versioning_dir(tmp_dir, dvc):
             }
         ]
     }
+
+
+def test_add_out_cleans_up_staging(tmp_dir, dvc):
+    tmp_dir.gen({"src_dir": {"a.txt": "aaa", "b.txt": "bbb"}})
+    odb = dvc.cache.local
+    assert list(odb.fs.find(odb.path)) == []
+
+    dvc.add("src_dir", out="dst_dir")
+
+    assert (tmp_dir / "dst_dir").read_text() == {"a.txt": "aaa", "b.txt": "bbb"}
+    assert not [p for p in odb.fs.find(odb.path) if p.endswith(".tmp")]

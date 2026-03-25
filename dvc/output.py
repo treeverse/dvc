@@ -1061,6 +1061,10 @@ class Output:
 
         staging.clear()
 
+        for path in odb.fs.find(odb.path):
+            if path.endswith(".tmp"):
+                odb.fs.remove(path)
+
         self.hash_info = obj.hash_info
         self.files = None
         return obj
