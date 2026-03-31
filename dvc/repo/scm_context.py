@@ -10,6 +10,8 @@ from dvc.utils import relpath
 from dvc.utils.collections import ensure_list
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     from dvc.repo import Repo
     from dvc.scm import Base
 
@@ -96,7 +98,7 @@ class SCMContext:
     @contextmanager
     def __call__(
         self, autostage: Optional[bool] = None, quiet: Optional[bool] = None
-    ) -> Iterator["SCMContext"]:
+    ) -> Iterator["Self"]:
         try:
             yield self
         except Exception:
@@ -131,9 +133,10 @@ class SCMContext:
 
         self.files_to_track = set()
 
-    def __enter__(self) -> "SCMContext":
+    def __enter__(self) -> "Self":
         self._cm = self()
-        return self._cm.__enter__()
+        self._cm.__enter__()
+        return self
 
     def __exit__(self, *exc_args) -> None:
         assert self._cm

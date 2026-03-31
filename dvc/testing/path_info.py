@@ -2,7 +2,7 @@ import os
 import pathlib
 import posixpath
 import sys
-from typing import Callable, ClassVar
+from typing import Callable, ClassVar, Union
 from urllib.parse import urlparse
 
 from dvc.utils import relpath
@@ -79,15 +79,17 @@ class PathInfo(pathlib.PurePath, _BasePath):
             and self._cparts[:n] == other._cparts  # type: ignore[attr-defined]
         )
 
-    def relative_to(self, other, *args, **kwargs):
+    def relative_to(
+        self, *other: Union[str, "os.PathLike[str]"], **kwargs
+    ) -> "PathInfo":
         # pathlib relative_to raises exception when one path is not a direct
         # descendant of the other when os.path.relpath would return abspath.
         # For DVC PathInfo we only need the relpath behavior.
         # See: https://bugs.python.org/issue40358
         try:
-            path = super().relative_to(other, *args, **kwargs)
+            path = super().relative_to(*other, **kwargs)
         except ValueError:
-            path = relpath(self, other)
+            path = relpath(self, other[0])
         return self.__class__(path)
 
 
