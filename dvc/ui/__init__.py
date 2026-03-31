@@ -289,7 +289,7 @@ class Console:
 
         return console.Console(stderr=True)
 
-    def table(
+    def table(  # noqa: PLR0913
         self,
         data: "TableData",
         headers: Optional["Headers"] = None,
@@ -301,6 +301,7 @@ class Console:
         row_styles: Optional[Sequence["Styles"]] = None,
         borders: Union[bool, str] = False,
         colalign: Optional[tuple[str, ...]] = None,
+        preserve_whitespace: bool = False,
     ) -> None:
         from dvc.ui import table as t
 
@@ -329,6 +330,7 @@ class Console:
             pager=pager,
             force=force,
             colalign=colalign,
+            preserve_whitespace=preserve_whitespace,
         )
 
     def status(self, status: str, **kwargs: Any) -> "Status":

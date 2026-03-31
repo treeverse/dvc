@@ -109,8 +109,6 @@ def _build_tree_structure(
 
 
 def show_tree(entries, with_color=False, with_size=False, with_hash=False):
-    import tabulate
-
     rows = _build_tree_structure(
         entries,
         with_color=with_color,
@@ -119,13 +117,7 @@ def show_tree(entries, with_color=False, with_size=False, with_hash=False):
     )
 
     colalign = ("right",) if with_size else None
-
-    _orig = tabulate.PRESERVE_WHITESPACE
-    tabulate.PRESERVE_WHITESPACE = True
-    try:
-        ui.table(rows, colalign=colalign)
-    finally:
-        tabulate.PRESERVE_WHITESPACE = _orig
+    ui.table(rows, colalign=colalign, preserve_whitespace=True)
 
 
 class CmdList(CmdBaseNoRepo):

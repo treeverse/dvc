@@ -30,19 +30,37 @@ def plain_table(
     pager: bool = False,
     force: bool = True,
     colalign: Optional[tuple[str, ...]] = None,
+    preserve_whitespace: bool = False,
 ) -> None:
+    import tabulate as tabulate_mod
     from funcy import nullcontext
+    from packaging.version import Version
     from tabulate import tabulate
 
-    text: str = tabulate(
-        data,
-        headers if headers is not None else (),
-        tablefmt="github" if markdown else "plain",
-        disable_numparse=True,
-        # None will be shown as "" by default, overriding
-        missingval="-",
-        colalign=colalign,
-    )
+    # NOTE: tabulate 0.10.0+ supports preserve_whitespace as a kwarg,
+    # while 0.9.0 only respects the global PRESERVE_WHITESPACE.
+    kwargs: dict = {}
+    _orig = tabulate_mod.PRESERVE_WHITESPACE
+    if preserve_whitespace:
+        if Version(tabulate_mod.__version__) >= Version("0.10"):
+            kwargs["preserve_whitespace"] = True
+        else:
+            tabulate_mod.PRESERVE_WHITESPACE = True
+
+    try:
+        text: str = tabulate(
+            data,
+            headers if headers is not None else (),
+            tablefmt="github" if markdown else "plain",
+            disable_numparse=True,
+            # None will be shown as "" by default, overriding
+            missingval="-",
+            colalign=colalign,
+            **kwargs,
+        )
+    finally:
+        tabulate_mod.PRESERVE_WHITESPACE = _orig
+
     if markdown:
         # NOTE: md table is incomplete without the trailing newline
         text += "\n"
