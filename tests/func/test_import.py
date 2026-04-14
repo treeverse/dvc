@@ -765,3 +765,40 @@ def test_import_no_hash(
     assert {
         call.args[1] for call in index_info_spy.call_args_list
     } == expected_info_calls
+
+
+def test_import_no_download_exp_run_pull_no_nesting(tmp_dir, dvc, scm, erepo_dir):
+    with erepo_dir.chdir():
+        erepo_dir.dvc_gen(
+            {"data": {"MNIST": {"raw": {"t10k-images": "dummy content"}}}},
+            commit="add data",
+        )
+
+    tmp_dir.gen({"dvc.yaml": ""})
+
+    dvc.imp(
+        url=os.fspath(erepo_dir),
+        path="data/",
+        out="remote_data",
+        no_download=True,
+    )
+
+    scm.add(["remote_data.dvc", "dvc.yaml", ".gitignore"])
+    scm.commit("Initial import with --no-download")
+
+    dvc.experiments.run(pull=True)
+
+    assert (tmp_dir / "remote_data" / "MNIST").exists()
+    assert not (tmp_dir / "remote_data" / "data").exists()
+
+    original_dvc_content = (tmp_dir / "remote_data.dvc").read_text()
+
+    remove(tmp_dir / "remote_data")
+
+    dvc.experiments.run(pull=True)
+
+    assert (tmp_dir / "remote_data" / "MNIST").exists()
+    assert not (tmp_dir / "remote_data" / "data").exists()
+
+    new_dvc_content = (tmp_dir / "remote_data.dvc").read_text()
+    assert original_dvc_content == new_dvc_content
