@@ -59,15 +59,29 @@ def _win_detached_subprocess(args: Sequence[str], **kwargs) -> int:
 def _get_dvc_args() -> list[str]:
     args = [sys.executable]
     if not is_binary():
-        # Launch via `python -m dvc` rather than `python .../dvc/__main__.py`.
-        # Running a script directly puts the script's directory at sys.path[0]
-        # (PEP 338), which makes dvc/types.py shadow the stdlib `types` module
-        # -- fatal on Python 3.14+ where stdlib re/enum import from `types`
-        # early during interpreter startup, before any user code runs.
-        # daemonize() already prepends site-packages to PYTHONPATH (see below),
-        # so `-m dvc` resolves correctly without script-dir injection.
-        # Fixes https://github.com/iterative/dvc/issues/11035.
-        args += ["-m", "dvc"]
+        # Launch via `python -c "<bootstrap>"` rather than
+        # `python .../dvc/__main__.py`. Running a script directly puts the
+        # script's directory at sys.path[0] (PEP 338), which makes
+        # dvc/types.py shadow the stdlib `types` module -- fatal on
+        # Python 3.14+ where stdlib re/enum import from `types` early
+        # during interpreter startup, before any user code runs.
+        #
+        # `-m dvc` would also avoid the script-dir-on-sys.path problem,
+        # but it sets `__main__.__spec__.name = "dvc.__main__"`, which on
+        # Windows changes how billiard / celery's main-module fixup picks
+        # up the parent module in spawned children and crashes the celery
+        # worker that backs `dvc queue start` (see #11037 CI). `-c` keeps
+        # `__main__` script-shaped (no `__spec__`) so billiard's existing
+        # main-module path is preserved, while still leaving sys.path[0]
+        # empty so dvc/types.py never shadows stdlib `types`.
+        #
+        # daemonize() prepends site-packages to PYTHONPATH (see below),
+        # so `from dvc.cli import main` resolves without script-dir
+        # injection. Fixes https://github.com/iterative/dvc/issues/11035.
+        args += [
+            "-c",
+            "import sys; from dvc.cli import main; sys.exit(main(sys.argv[1:]))",
+        ]
     return args
 
 
