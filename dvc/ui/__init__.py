@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from rich.text import Text as RichText
 
     from dvc.progress import Tqdm
-    from dvc.types import StrPath
+    from dvc._types import StrPath
     from dvc.ui.table import Headers, Styles, TableData
 
 

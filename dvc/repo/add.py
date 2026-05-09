@@ -19,7 +19,7 @@ from . import locked
 if TYPE_CHECKING:
     from dvc.repo import Repo
     from dvc.stage import Stage
-    from dvc.types import StrOrBytesPath
+    from dvc._types import StrOrBytesPath
 
 
 class StageInfo(NamedTuple):

@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from contextlib import AbstractContextManager
 
     from dvc.repo import Repo
-    from dvc.types import DictStrAny, StrPath
+    from dvc._types import DictStrAny, StrPath
 
     from .callbacks import Callback
 

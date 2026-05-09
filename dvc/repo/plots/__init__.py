@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from dvc.fs import FileSystem
     from dvc.output import Output
     from dvc.repo import Repo
-    from dvc.types import DictStrAny, StrPath
+    from dvc._types import DictStrAny, StrPath
 
 dpath.options.ALLOW_EMPTY_STRING_KEYS = True
 

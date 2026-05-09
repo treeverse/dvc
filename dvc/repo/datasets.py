@@ -12,7 +12,7 @@ from attrs.converters import default_if_none
 from dvc.dvcfile import Lockfile, ProjectFile
 from dvc.exceptions import DvcException
 from dvc.log import logger
-from dvc.types import StrPath
+from dvc._types import StrPath
 from dvc_data.hashfile.meta import Meta
 
 if TYPE_CHECKING:

@@ -12,7 +12,7 @@ from sqlalchemy.exc import NoSuchModuleError  # type: ignore[import]
 from dvc import env
 from dvc.exceptions import DvcException
 from dvc.log import logger
-from dvc.types import StrOrBytesPath
+from dvc._types import StrOrBytesPath
 from dvc.utils import env2bool
 
 if TYPE_CHECKING:

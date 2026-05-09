@@ -17,7 +17,7 @@ from dvc.utils.serialize import dump_yaml, modify_yaml
 
 if TYPE_CHECKING:
     from dvc.repo import Repo
-    from dvc.types import StrOrBytesPath
+    from dvc._types import StrOrBytesPath
 
     from .parsing import DataResolver
     from .stage import Stage

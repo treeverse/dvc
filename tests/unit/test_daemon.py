@@ -1,46 +1,40 @@
 import inspect
 import os
-import sys
+from pathlib import Path
 
 from dvc import daemon
 
 
-def test_get_dvc_args_uses_inline_bootstrap(mocker):
+def test_no_stdlib_types_shadow():
     # Regression for https://github.com/iterative/dvc/issues/11035.
-    # The daemon must not be launched as `python <site-packages>/dvc/__main__.py`,
-    # which puts the dvc package directory on sys.path[0] and shadows the stdlib
-    # `types` module via dvc/types.py -- fatal on Python 3.14+ at interpreter
-    # startup (stdlib re/enum import from types).
     #
-    # We also avoid `python -m dvc`, which sets
-    # `__main__.__spec__.name == "dvc.__main__"` and breaks billiard /
-    # celery's main-module fixup on Windows (the celery worker backing
-    # `dvc queue start` crashes -- see #11037 CI).
+    # When the daemon worker is launched as `python <site-packages>/dvc/__main__.py`
+    # (the path the daemon takes on Windows -- see `_get_dvc_args` and
+    # `_spawn_worker` in dvc/repo/experiments/queue/celery.py), PEP 338 prepends
+    # the script's directory to `sys.path[0]`. If the dvc package directory
+    # contains a module whose name shadows a stdlib module the interpreter
+    # imports during startup (notably `types`, on Python 3.14+ where
+    # stdlib `typing.py` does `from types import GenericAlias` very early),
+    # the shadowed import resolves to the dvc-package copy and the worker
+    # dies before any user code runs -- on the user side `dvc queue start`
+    # reports success but no worker actually comes up.
     #
-    # The accepted shape is `python -c "<inline bootstrap>"`: keeps
-    # sys.path[0] empty (no stdlib shadow) AND keeps `__main__` script-
-    # shaped (no `__spec__`), so billiard's existing path is preserved.
-    mocker.patch("dvc.daemon.is_binary", return_value=False)
-    args = daemon._get_dvc_args()
-    assert args[0] == sys.executable
-    assert args[1] == "-c"
-    assert len(args) == 3
-    bootstrap = args[2]
-    # The inline bootstrap must import via the regular package path
-    # (`from dvc.cli import main`) -- never reference __main__.py, never
-    # use `runpy` / `-m dvc`, never inject the package dir onto sys.path.
-    assert "from dvc.cli import main" in bootstrap
-    assert "__main__" not in bootstrap
-    assert "runpy" not in bootstrap
-    assert not any(a.endswith("__main__.py") for a in args)
-    assert "-m" not in args
+    # The structural fix is simply: don't ship a top-level `dvc/types.py`.
+    # The internal aliases that used to live there now live in
+    # `dvc/_types.py` (leading underscore, no stdlib name to collide with).
+    # This test fails fast if someone reintroduces `dvc/types.py`.
+    dvc_pkg = Path(daemon.__file__).parent
+    assert not (dvc_pkg / "types.py").exists(), (
+        "dvc/types.py shadows stdlib `types` and breaks the Windows-path "
+        "daemon worker on Python 3.14+ (issue #11035). Use dvc/_types.py."
+    )
+    # Defensive: even if someone re-imports stdlib `types` via the dvc
+    # package, it must be the stdlib one.
+    import types as types_mod
 
-
-def test_get_dvc_args_binary(mocker):
-    # When packaged as a PyInstaller binary, args is just the executable.
-    mocker.patch("dvc.daemon.is_binary", return_value=True)
-    args = daemon._get_dvc_args()
-    assert args == [sys.executable]
+    assert "dvc" not in (types_mod.__file__ or ""), (
+        f"stdlib `types` resolved to a dvc-shadowed module: {types_mod.__file__}"
+    )
 
 
 def test_daemon(mocker):

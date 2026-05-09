@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from dvc.output import Output
     from dvc.scm import Git, NoSCM
     from dvc.stage import Stage
-    from dvc.types import DictStrAny
+    from dvc._types import DictStrAny
     from dvc_data.hashfile.state import StateBase
     from dvc_data.index import DataIndex, DataIndexEntry
 

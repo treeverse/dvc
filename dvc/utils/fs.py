@@ -9,7 +9,7 @@ from dvc.exceptions import DvcException
 from dvc.log import logger
 
 if TYPE_CHECKING:
-    from dvc.types import StrPath
+    from dvc._types import StrPath
 
 logger = logger.getChild(__name__)
 

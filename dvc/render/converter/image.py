@@ -7,7 +7,7 @@ from dvc.render import FILENAME, REVISION, SRC
 from . import Converter
 
 if TYPE_CHECKING:
-    from dvc.types import StrPath
+    from dvc._types import StrPath
 
 
 class ImageConverter(Converter):

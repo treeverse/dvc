@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from dvc.repo import Repo
     from dvc.repo.stage import StageInfo
     from dvc.stage import Stage
-    from dvc.types import TargetType
+    from dvc._types import TargetType
     from dvc_data.hashfile.db import HashFileDB
     from dvc_data.hashfile.hash_info import HashInfo
     from dvc_data.index import DataIndex, DataIndexKey, DataIndexView

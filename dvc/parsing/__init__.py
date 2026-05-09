@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from typing import NoReturn
 
     from dvc.repo import Repo
-    from dvc.types import DictStrAny
+    from dvc._types import DictStrAny
 
     from .context import SeqOrMap
 
