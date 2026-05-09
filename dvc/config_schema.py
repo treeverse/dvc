@@ -189,6 +189,16 @@ REMOTE_SCHEMAS = {
         "cache_regions": bool,
         "read_timeout": Coerce(int),
         "connect_timeout": Coerce(int),
+        # boto3 TransferConfig knobs forwarded by dvc-s3 via _TRANSFER_CONFIG_ALIASES.
+        # Required for S3-compatible backends with stricter multipart limits than AWS
+        # (e.g. Scaleway: max 1000 parts -> 8 GiB cap at boto3's default 8 MiB part
+        # size, lifted to 64 GiB with multipart_chunksize=64MiB). Stored as
+        # human-readable strings (e.g. "64MiB"); dvc-s3 calls human_readable_to_bytes
+        # downstream. See https://github.com/iterative/dvc/issues/11034.
+        "multipart_threshold": str,
+        "multipart_chunksize": str,
+        "max_concurrent_requests": Coerce(int),
+        "max_queue_size": Coerce(int),
         Optional("verify", default=False): Bool,
         **REMOTE_COMMON,
     },

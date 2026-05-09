@@ -96,6 +96,30 @@ def test_s3_ssl_verify(tmp_dir, dvc):
     )
 
 
+def test_s3_multipart_transfer_keys():
+    # Regression for https://github.com/iterative/dvc/issues/11034:
+    # dvc-s3 already maps these into boto3 TransferConfig, but the schema
+    # rejected them at config-load time, so plugin-side support was unreachable.
+    data = Config.validate(
+        {
+            "remote": {
+                "myremote": {
+                    "url": "s3://bucket/dvc",
+                    "multipart_chunksize": "64MiB",
+                    "multipart_threshold": "16MiB",
+                    "max_concurrent_requests": 8,
+                    "max_queue_size": 4096,
+                }
+            }
+        }
+    )
+    section = data["remote"]["myremote"]
+    assert section["multipart_chunksize"] == "64MiB"
+    assert section["multipart_threshold"] == "16MiB"
+    assert section["max_concurrent_requests"] == 8
+    assert section["max_queue_size"] == 4096
+
+
 def test_load_unicode_error(tmp_dir, dvc, mocker):
     config = Config.from_cwd(validate=False)
     mocker.patch(
