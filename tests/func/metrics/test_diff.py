@@ -9,6 +9,26 @@ from dvc.utils import relpath
 from dvc.utils.serialize import JSONFileCorruptedError
 
 
+def test_metrics_diff_same_commit_different_refs(tmp_dir, scm, dvc, run_copy_metrics):
+    # Regression for https://github.com/iterative/dvc/issues/10429.
+    # When a_rev and b_rev are distinct ref names that happen to resolve to the
+    # same SHA (e.g. "main" and "HEAD"), brancher groups them under a single
+    # composite key like "main,HEAD" in the metrics.show() result. The old
+    # _diff() looked up "main" and "HEAD" individually and returned {}; the
+    # expected behavior is an all-zero diff (same metrics on both sides).
+    tmp_dir.gen({"m_temp.yaml": "1"})
+    run_copy_metrics("m_temp.yaml", "m.yaml", name="copy-metrics", metrics=["m.yaml"])
+    dvc.scm.commit("add metrics")
+
+    branch_name = scm.active_branch()
+    expected = {"m.yaml": {"": {"old": 1, "new": 1, "diff": 0}}}
+
+    # both ref names resolve to the same SHA -> diff should still report all-zero
+    assert dvc.metrics.diff(a_rev=branch_name, b_rev="HEAD", all=True) == {
+        "diff": expected
+    }
+
+
 def test_metrics_diff_simple(tmp_dir, scm, dvc, run_copy_metrics):
     def _gen(val):
         tmp_dir.gen({"m_temp.yaml": str(val)})
