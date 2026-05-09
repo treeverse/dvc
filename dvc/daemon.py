@@ -59,9 +59,15 @@ def _win_detached_subprocess(args: Sequence[str], **kwargs) -> int:
 def _get_dvc_args() -> list[str]:
     args = [sys.executable]
     if not is_binary():
-        root_dir = os.path.abspath(os.path.dirname(__file__))
-        main_entrypoint = os.path.join(root_dir, "__main__.py")
-        args.append(main_entrypoint)
+        # Launch via `python -m dvc` rather than `python .../dvc/__main__.py`.
+        # Running a script directly puts the script's directory at sys.path[0]
+        # (PEP 338), which makes dvc/types.py shadow the stdlib `types` module
+        # -- fatal on Python 3.14+ where stdlib re/enum import from `types`
+        # early during interpreter startup, before any user code runs.
+        # daemonize() already prepends site-packages to PYTHONPATH (see below),
+        # so `-m dvc` resolves correctly without script-dir injection.
+        # Fixes https://github.com/iterative/dvc/issues/11035.
+        args += ["-m", "dvc"]
     return args
 
 
