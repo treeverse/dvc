@@ -387,15 +387,17 @@ class Repo:
         path: str,
         workspace: str = "repo",
     ) -> tuple["DataIndex", "DataIndexEntry"]:
+        fs_path = path if self.fs.isabs(path) else self.fs.join(self.root_dir, path)
         if self.subrepos:
-            fs_path = self.dvcfs.from_os_path(path)
+            fs_path = self.dvcfs.from_os_path(fs_path)
+            fs_path = self.dvcfs.join(self.dvcfs.root_marker, fs_path)
             fs = self.dvcfs.fs
             key = fs._get_key_from_relative(fs_path)
             subrepo, _, key = fs._get_subrepo_info(key)
             index = subrepo.index.data[workspace]
         else:
             index = self.index.data[workspace]
-            key = self.fs.relparts(path, self.root_dir)
+            key = self.fs.relparts(fs_path, self.root_dir)
 
         try:
             return index, index[key]
