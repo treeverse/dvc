@@ -274,6 +274,13 @@ def test_get_url_subrepos(tmp_dir, scm, local_cloud):
     )
     assert api.get_url(os.path.join("subrepo", "dir", "foo")) == expected_url
     assert api.get_url(os.path.join("subrepo", "dir", "foo"), repo=".") == expected_url
+    subdir = tmp_dir / "subdir"
+    subdir.mkdir()
+    with subdir.chdir():
+        assert (
+            api.get_url(os.path.join("subrepo", "dir", "foo"), repo=os.fspath(tmp_dir))
+            == expected_url
+        )
 
     expected_url = os.fspath(
         local_cloud / "files" / "md5" / "37" / "b51d194a7513e45b56f6524f2d51f2"
