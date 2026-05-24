@@ -104,6 +104,8 @@ def test_get_url_with_explicit_repo_from_subdir(tmp_dir, dvc, scm, cloud):
     ).url
     with (tmp_dir / "subdir").chdir():
         assert api.get_url("foo", repo=os.fspath(tmp_dir)) == expected_url
+        _, entry = dvc.get_data_index_entry("foo")
+        assert entry.hash_info.value == "acbd18db4cc2f85cedef654fccc4a4d8"
 
 
 def test_open_external(tmp_dir, erepo_dir, cloud):
