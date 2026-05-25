@@ -13,8 +13,8 @@ if TYPE_CHECKING:
     from rich.style import Style
     from rich.text import Text as RichText
 
-    from dvc.progress import Tqdm
     from dvc._types import StrPath
+    from dvc.progress import Tqdm
     from dvc.ui.table import Headers, Styles, TableData
 
 

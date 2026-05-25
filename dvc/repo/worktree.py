@@ -8,13 +8,13 @@ from dvc.log import logger
 from dvc.stage.exceptions import StageUpdateError
 
 if TYPE_CHECKING:
+    from dvc._types import TargetType
     from dvc.data_cloud import Remote
     from dvc.output import Output
     from dvc.repo import Repo
     from dvc.repo.index import Index, IndexView
     from dvc.repo.stage import StageInfo
     from dvc.stage import Stage
-    from dvc._types import TargetType
     from dvc_data.hashfile.meta import Meta
     from dvc_data.index import DataIndex, DataIndexView
     from dvc_objects.fs.base import FileSystem

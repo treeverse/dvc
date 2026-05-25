@@ -9,8 +9,8 @@ from funcy import reraise
 from dvc.exceptions import DvcException
 
 if TYPE_CHECKING:
-    from dvc.fs import FileSystem
     from dvc._types import StrPath
+    from dvc.fs import FileSystem
 
 
 class DumperFn(Protocol):

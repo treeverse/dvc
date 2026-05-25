@@ -21,8 +21,8 @@ from .data import DataFileSystem
 if TYPE_CHECKING:
     from contextlib import AbstractContextManager
 
-    from dvc.repo import Repo
     from dvc._types import DictStrAny, StrPath
+    from dvc.repo import Repo
 
     from .callbacks import Callback
 

@@ -31,8 +31,8 @@ from .interpolate import (
 if TYPE_CHECKING:
     from typing import NoReturn
 
-    from dvc.repo import Repo
     from dvc._types import DictStrAny
+    from dvc.repo import Repo
 
     from .context import SeqOrMap
 

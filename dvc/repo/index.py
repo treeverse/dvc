@@ -19,13 +19,13 @@ if TYPE_CHECKING:
     from pygtrie import Trie
     from typing_extensions import Self
 
+    from dvc._types import TargetType
     from dvc.dependency import Dependency
     from dvc.fs.callbacks import Callback
     from dvc.output import Output
     from dvc.repo import Repo
     from dvc.repo.stage import StageInfo
     from dvc.stage import Stage
-    from dvc._types import TargetType
     from dvc_data.hashfile.db import HashFileDB
     from dvc_data.hashfile.hash_info import HashInfo
     from dvc_data.index import DataIndex, DataIndexKey, DataIndexView
