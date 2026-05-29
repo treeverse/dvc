@@ -330,14 +330,13 @@ class Repo:
 
     @cached_property
     def dvcignore(self) -> DvcIgnoreFilter:
-        from dvc.scm import NoSCM
+        return DvcIgnoreFilter(self.fs, self.root_dir)
 
-        if isinstance(self.scm, NoSCM):
-            root_dir = self.root_dir
-        else:
-            root_dir = self.scm.root_dir
-
-        return DvcIgnoreFilter(self.fs, root_dir)
+    @cached_property
+    def scm_dvcignore(self) -> DvcIgnoreFilter:
+        if self.root_dir == self.scm.root_dir:
+            return self.dvcignore
+        return DvcIgnoreFilter(self.fs, self.scm.root_dir)
 
     def get_rev(self):
         from dvc.fs import GitFileSystem, LocalFileSystem
