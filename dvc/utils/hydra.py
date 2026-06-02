@@ -7,7 +7,7 @@ from dvc.log import logger
 from .collections import merge_dicts, remove_missing_keys, to_omegaconf
 
 if TYPE_CHECKING:
-    from dvc.types import StrPath
+    from dvc._types import StrPath
 
 
 logger = logger.getChild(__name__)

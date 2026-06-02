@@ -17,9 +17,9 @@ from dvc.utils import glob_targets, resolve_output, resolve_paths
 from . import locked
 
 if TYPE_CHECKING:
+    from dvc._types import StrOrBytesPath
     from dvc.repo import Repo
     from dvc.stage import Stage
-    from dvc.types import StrOrBytesPath
 
 
 class StageInfo(NamedTuple):
