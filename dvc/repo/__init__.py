@@ -388,8 +388,12 @@ class Repo:
         workspace: str = "repo",
     ) -> tuple["DataIndex", "DataIndexEntry"]:
         if self.subrepos:
-            fs_path = self.dvcfs.from_os_path(path)
             fs = self.dvcfs.fs
+            fs_path = self.dvcfs.from_os_path(path)
+            # `path` is relative to the repo root, so anchor it there instead of
+            # letting it resolve against the current working directory (#11029).
+            if not fs_path.startswith(fs.root_marker):
+                fs_path = fs.join(fs.root_marker, fs_path)
             key = fs._get_key_from_relative(fs_path)
             subrepo, _, key = fs._get_subrepo_info(key)
             index = subrepo.index.data[workspace]
