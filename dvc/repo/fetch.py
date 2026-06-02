@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from dvc.exceptions import DownloadError
+from dvc.exceptions import DownloadError, InvalidArgumentError
 from dvc.log import logger
 from dvc.stage.cache import RunCacheNotSupported
 from dvc.ui import ui
@@ -35,6 +35,7 @@ def _collect_indexes(  # noqa: PLR0913
     recursive=False,
     all_commits=False,
     revs=None,
+    num=1,
     workspace=True,
     max_size=None,
     types=None,
@@ -66,6 +67,7 @@ def _collect_indexes(  # noqa: PLR0913
         all_branches=all_branches,
         all_tags=all_tags,
         all_commits=all_commits,
+        num=num,
         workspace=workspace,
     ):
         try:
@@ -110,6 +112,7 @@ def fetch(  # noqa: PLR0913
     all_commits=False,
     run_cache=False,
     revs=None,
+    num=1,
     workspace=True,
     max_size=None,
     types=None,
@@ -136,6 +139,13 @@ def fetch(  # noqa: PLR0913
     if isinstance(targets, str):
         targets = [targets]
 
+    if num < 1:
+        raise InvalidArgumentError("`--num` must be a positive integer.")
+
+    if num > 1 and not (revs or all_branches or all_tags or all_commits):
+        # `--num` on its own fetches the last `num` commits of the current branch.
+        revs = ["HEAD"]
+
     failed_count = 0
     transferred_count = 0
 
@@ -157,6 +167,7 @@ def fetch(  # noqa: PLR0913
         recursive=recursive,
         all_commits=all_commits,
         revs=revs,
+        num=num,
         workspace=workspace,
         max_size=max_size,
         types=types,
