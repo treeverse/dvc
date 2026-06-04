@@ -505,7 +505,7 @@ class Output:
         if not self.is_in_repo:
             return False
 
-        return self.use_cache or self.stage.is_repo_import
+        return self.use_cache
 
     @property
     def cache(self):
