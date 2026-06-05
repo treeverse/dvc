@@ -14,7 +14,7 @@ from dvc.utils import env2bool
 from dvc.utils.collections import ensure_list
 
 from .exceptions import UnresolvedExpNamesError
-from .refs import ExpRefInfo
+from .refs import CELERY_QUEUE, ExpRefInfo
 from .utils import exp_commits, exp_refs, exp_refs_by_baseline, resolve_name
 
 if TYPE_CHECKING:
@@ -94,10 +94,15 @@ def push(
     num: int = 1,
     force: bool = False,
     push_cache: bool = False,
+    queued: bool = False,
     **kwargs: Any,
 ) -> dict[str, Any]:
-    exp_ref_set: set[ExpRefInfo] = set()
     assert isinstance(repo.scm, Git)
+
+    if queued:
+        return _push_queued(repo, git_remote, force)
+
+    exp_ref_set: set[ExpRefInfo] = set()
     if all_commits:
         exp_ref_set.update(exp_refs(repo.scm))
     if exp_names:
@@ -182,3 +187,47 @@ def _push_cache(
     return repo.push(
         jobs=jobs, remote=dvc_remote, run_cache=run_cache, revs=revs, workspace=False
     )
+
+
+def _push_queued(
+    repo: "Repo",
+    git_remote: str,
+    force: bool,
+) -> dict[str, Any]:
+    """Push queued experiments to the Git remote as temporary refs."""
+    from scmrepo.exceptions import AuthError
+
+    from dvc.scm import GitAuthError
+
+    queued_entries = list(repo.experiments.celery_queue.iter_queued())
+    if not queued_entries:
+        return {"queued": []}
+
+    # Create temporary refs for each queued experiment
+    temp_refs = []
+    for entry in queued_entries:
+        ref = f"{CELERY_QUEUE}/{entry.stash_rev}"
+        repo.scm.set_ref(ref, entry.stash_rev)
+        temp_refs.append(ref)
+
+    refspec_list = [f"{ref}:{ref}" for ref in temp_refs]
+    logger.debug("git push queued experiments %s -> '%s'", refspec_list, git_remote)
+
+    try:
+        with TqdmGit(desc="Pushing queued experiments") as pbar:
+            try:
+                repo.scm.push_refspecs(
+                    git_remote,
+                    refspec_list,
+                    force=force,
+                    progress=pbar.update_git,
+                )
+            except AuthError as exc:
+                raise GitAuthError(str(exc))  # noqa: B904
+    finally:
+        # Clean up local temporary refs
+        for ref in temp_refs:
+            repo.scm.remove_ref(ref)
+
+    pushed_names = [entry.name or entry.stash_rev[:7] for entry in queued_entries]
+    return {"queued": pushed_names}

@@ -51,6 +51,25 @@ class CmdExperimentsPush(CmdBase):
     def run(self):
         from dvc.repo.experiments.push import UploadError
 
+        if self.args.queued:
+            result = self.repo.experiments.push(
+                self.args.git_remote,
+                queued=True,
+                force=self.args.force,
+            )
+            if pushed := result.get("queued", []):
+                from dvc.utils import humanize
+
+                exps = humanize.join([f"[bold]{e}[/]" for e in pushed])
+                ui.write(
+                    f"Pushed queued experiment {exps}"
+                    f" to Git remote {self.args.git_remote!r}.",
+                    styled=True,
+                )
+            else:
+                ui.write("No queued experiments to push.")
+            return 0
+
         try:
             result = self.repo.experiments.push(
                 self.args.git_remote,
@@ -93,6 +112,12 @@ def add_parser(experiments_subparsers, parent_parser):
         formatter_class=formatter.RawDescriptionHelpFormatter,
     )
     add_rev_selection_flags(experiments_push_parser, "Push", True)
+    experiments_push_parser.add_argument(
+        "--queued",
+        action="store_true",
+        default=False,
+        help="Push all queued experiments to the Git remote.",
+    )
     experiments_push_parser.add_argument(
         "-f",
         "--force",
