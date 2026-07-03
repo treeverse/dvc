@@ -90,7 +90,7 @@ class BaseStashQueue(ABC):
         """Construct a queue.
 
         Arguments:
-            scm: Git SCM instance for this queue.
+            repo: DVC repo instance for this queue.
             ref: Git stash ref for this queue.
             failed_ref: Failed run Git stash ref for this queue.
         """

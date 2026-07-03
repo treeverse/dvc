@@ -84,8 +84,8 @@ def cleanup_exp(executor: TempDirExecutor, infofile: str) -> None:
     """Cleanup after an experiment.
 
     Arguments:
-        tmp_dir: Temp directory to be removed.
-        entry_dict: Serialized QueueEntry for this experiment.
+        executor: Executor to clean up.
+        infofile: Path to the executor info file.
     """
     executor.cleanup(infofile)
 
