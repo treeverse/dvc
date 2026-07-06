@@ -1296,3 +1296,37 @@ def test_repro_external_outputs(tmp_dir, dvc, local_workspace, persist):
     assert (local_workspace / "foo").read_text() == "foo"
     assert (local_workspace / "bar").read_text() == "foo"
     assert not (local_workspace / "cache").exists()
+
+
+def test_repro_records_pre_run_dep_hash(tmp_dir, dvc, caplog):
+    # code.py is its own dependency; running it mutates code.py,
+    # simulating a dependency being edited while the stage runs.
+    code = (
+        "from pathlib import Path\n"
+        "Path('out.txt').write_text('produced')\n"
+        "Path('code.py').write_text(Path('code.py').read_text() + '\\n# mutated\\n')\n"
+    )
+    tmp_dir.gen("code.py", code)
+    (tmp_dir / "dvc.yaml").dump(
+        {
+            "stages": {
+                "build": {
+                    "cmd": "python code.py",
+                    "deps": ["code.py"],
+                    "outs": ["out.txt"],
+                }
+            }
+        }
+    )
+
+    reproduced = dvc.reproduce("build")
+    assert reproduced  # it ran the first time
+
+    # The dep hash in the lock must correspond to the ORIGINAL code.py,
+    # so it must NOT match the now-mutated workspace file -> stage is "changed".
+    # (Under the bug, status is empty / up-to-date here.)
+    assert dvc.status(["build"]) != {}
+
+    # A second reproduce must actually re-run, not skip.
+    # (Under the bug, this returns [] because the lock matches the mutated file.)
+    assert dvc.reproduce("build")
