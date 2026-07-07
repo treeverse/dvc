@@ -638,7 +638,9 @@ class Stage(params.StageParams):
     def _run_stage(self, dry, force, **kwargs) -> None:
         if not dry:
             self._frozen_deps = None
-            old_hashes = {dep: (dep.hash_info, getattr(dep, "meta", None)) for dep in self.deps}
+            old_hashes = {
+                dep: (dep.hash_info, getattr(dep, "meta", None)) for dep in self.deps
+            }
             # Freeze dependency hashes *before* the command runs, so dvc.lock
             # records the inputs actually used to produce the outputs.
             # Recomputing them after the run (in save()) would capture any
@@ -646,7 +648,8 @@ class Stage(params.StageParams):
             # code<->output linkage. See issue #11058.
             self.save_deps(allow_missing=True)
             self._frozen_deps = {
-                id(dep): (dep.hash_info, getattr(dep, "meta", None)) for dep in self.deps
+                id(dep): (dep.hash_info, getattr(dep, "meta", None))
+                for dep in self.deps
             }
             for dep, (old_hash, old_meta) in old_hashes.items():
                 dep.hash_info = old_hash
