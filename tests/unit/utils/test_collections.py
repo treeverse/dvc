@@ -4,7 +4,9 @@ import pytest
 
 from dvc.utils.collections import (
     apply_diff,
+    ensure_list,
     merge_dicts,
+    nested_contains,
     remove_missing_keys,
     to_omegaconf,
 )
@@ -139,3 +141,31 @@ def test_remove_missing_keys(changes, expected):
     assert removed == expected == params
     assert params is removed  # references should be preserved
     assert is_serializable(params)
+
+
+@pytest.mark.parametrize(
+    "item, expected",
+    [
+        (None, []),
+        ("foo", ["foo"]),
+        (["foo", "bar"], ["foo", "bar"]),
+        (("foo", "bar"), ["foo", "bar"]),
+        ([], []),
+    ],
+)
+def test_ensure_list(item, expected):
+    assert ensure_list(item) == expected
+
+
+@pytest.mark.parametrize(
+    "dictionary, phrase, expected",
+    [
+        ({"foo": 1, "bar": 2}, "foo", True),
+        ({"foo": 0}, "foo", False),  # falsy value does not count
+        ({"foo": {"bar": {"baz": 1}}}, "baz", True),  # nested match
+        ({"foo": 1}, "bar", False),  # missing key
+        ({}, "foo", False),
+    ],
+)
+def test_nested_contains(dictionary, phrase, expected):
+    assert nested_contains(dictionary, phrase) is expected
