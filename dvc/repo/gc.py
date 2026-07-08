@@ -88,7 +88,7 @@ def gc(  # noqa: C901, PLR0912, PLR0913
         not_in_remote=not_in_remote,
     )
 
-    from contextlib import ExitStack
+    from contextlib import ExitStack, closing
 
     from dvc.repo import Repo
     from dvc_data.hashfile.db import get_index
@@ -148,7 +148,8 @@ def gc(  # noqa: C901, PLR0912, PLR0913
         assert remote_odb is not None
         num_removed = ogc(remote_odb, obj_ids, jobs=jobs, dry=dry)
         if num_removed:
-            get_index(remote_odb).clear()
+            with closing(get_index(remote_odb)) as index:
+                index.clear()
             logger.info("Removed %d objects from remote.", num_removed)
         else:
             logger.info("No unused cache to remove from remote.")
