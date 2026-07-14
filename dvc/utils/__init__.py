@@ -237,14 +237,19 @@ def as_posix(path: str) -> str:
     return path.replace(ntpath.sep, posixpath.sep)
 
 
+TRUTHY_VALUES = frozenset({"1", "y", "yes", "true"})
+
+
 def env2bool(var, undefined=False):
     """
     undefined: return value if env var is unset
     """
-    var = os.getenv(var, None)
-    if var is None:
+    value = os.getenv(var, None)
+    if value is None:
         return undefined
-    return bool(re.search("1|y|yes|true", var, flags=re.IGNORECASE))
+    # Compare the whole value: a substring search treats any value that merely
+    # contains "1" or "y" (e.g. "deny", "only", "10") as true.
+    return value.strip().lower() in TRUTHY_VALUES
 
 
 def resolve_output(inp: str, out: Optional[str], force=False) -> str:
