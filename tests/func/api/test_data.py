@@ -250,6 +250,22 @@ def test_get_url_granular(tmp_dir, dvc, cloud):
     assert api.get_url(os.path.join("dir", "nested", "file")) == expected_url
 
 
+def test_get_url_from_subdir(tmp_dir, dvc, local_cloud):
+    tmp_dir.add_remote(config=local_cloud.config)
+    tmp_dir.dvc_gen({"foo": "foo", "subdir": {"bar": "bar"}})
+
+    expected_url = (
+        local_cloud / "files" / "md5" / "ac" / "bd18db4cc2f85cedef654fccc4a4d8"
+    ).url
+
+    # A relative path is relative to the root of the repo, even when the
+    # current working directory is a subdirectory of the repo (#11029).
+    subdir = tmp_dir / "subdir"
+    with subdir.chdir():
+        assert api.get_url("foo") == expected_url
+        assert api.get_url("foo", repo=os.fspath(tmp_dir)) == expected_url
+
+
 def test_get_url_subrepos(tmp_dir, scm, local_cloud):
     subrepo = tmp_dir / "subrepo"
     make_subrepo(subrepo, scm, config=local_cloud.config)
