@@ -222,6 +222,44 @@ def test_verify_hashes(tmp_dir, scm, dvc, mocker, tmp_path_factory, local_remote
     assert hash_spy.call_count == 10
 
 
+def test_pull_mixed_dvcfile_and_granular_targets(tmp_dir, scm, dvc, local_remote):
+    """Regression test for #11075.
+
+    A ``pull`` target list that mixes a ``.dvc``-file target with a granular path
+    inside a tracked directory used to build a partial index from only the
+    ``.dvc`` target while still filtering against the full target list, so the
+    granular target was silently skipped (or, when the directory had drifted,
+    ``checkout`` crashed with an uncaught ``KeyError``).
+    """
+    tmp_dir.dvc_gen(
+        {"datadir": {"f1.txt": "one", "f2.txt": "two", "f3.txt": "three"}},
+        commit="add dir",
+    )
+    tmp_dir.dvc_gen("single.csv", "single", commit="add single")
+    dvc.push()
+
+    mixed_targets = ["single.csv.dvc", join("datadir", "f1.txt")]
+
+    # Fresh-clone state: the granular target must be checked out, not skipped.
+    remove("datadir")
+    remove("single.csv")
+    dvc.cache.local.clear()
+
+    dvc.pull(mixed_targets)
+
+    assert (tmp_dir / "datadir" / "f1.txt").read_text() == "one"
+    assert (tmp_dir / "single.csv").read_text() == "single"
+
+    # A drifted (untracked) file inside the tracked directory must not turn the
+    # mixed-target pull into an uncaught KeyError during checkout.
+    dvc.pull()
+    (tmp_dir / "datadir" / "extra-drift.txt").write_text("extra")
+
+    dvc.pull(mixed_targets)  # must not raise
+
+    assert (tmp_dir / "datadir" / "f1.txt").read_text() == "one"
+
+
 # @pytest.mark.flaky(reruns=3)
 @pytest.mark.parametrize("erepo_type", ["git_dir", "erepo_dir"])
 def test_pull_git_imports(request, tmp_dir, dvc, scm, erepo_type):

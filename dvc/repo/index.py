@@ -972,7 +972,13 @@ def index_from_targets(
                     index = Index(repo, stages=list(stages))
                 indexes.append(index)
         except (StageFileDoesNotExistError, StageNotFound):
-            pass
+            # A target that is not a stage/.dvc file (e.g. a granular path inside a
+            # tracked directory) aborts the per-target merge partway through. Reset
+            # to fall back to the full repo index with the original targets, rather
+            # than keeping the partial index built only from the targets parsed
+            # before the failure — using that partial index with the full targets
+            # list silently drops the unparsed targets and can crash checkout (#11075).
+            index = None
         else:
             index = Index.from_indexes(repo, indexes)
             targets = None
