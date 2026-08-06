@@ -12,7 +12,7 @@ from dvc.utils.plots import group_definitions_by_id
 from .convert import _get_converter
 
 if TYPE_CHECKING:
-    from dvc.types import StrPath
+    from dvc._types import StrPath
     from dvc_render.base import Renderer
 
 

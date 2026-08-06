@@ -16,8 +16,8 @@ from dvc.log import logger
 from .utils.objects import cached_property
 
 if TYPE_CHECKING:
+    from dvc._types import DictStrAny
     from dvc.fs import FileSystem
-    from dvc.types import DictStrAny
 
 logger = logger.getChild(__name__)
 

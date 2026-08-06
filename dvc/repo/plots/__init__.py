@@ -21,10 +21,10 @@ from dvc.utils.threadpool import ThreadPoolExecutor
 from dvc_render.image import ImageRenderer
 
 if TYPE_CHECKING:
+    from dvc._types import DictStrAny, StrPath
     from dvc.fs import FileSystem
     from dvc.output import Output
     from dvc.repo import Repo
-    from dvc.types import DictStrAny, StrPath
 
 dpath.options.ALLOW_EMPTY_STRING_KEYS = True
 

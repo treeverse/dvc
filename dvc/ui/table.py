@@ -4,7 +4,7 @@ from contextlib import ExitStack, contextmanager
 from itertools import zip_longest
 from typing import TYPE_CHECKING, Optional, Union
 
-from dvc.types import DictStrAny
+from dvc._types import DictStrAny
 
 if TYPE_CHECKING:
     from rich.console import Console as RichConsole
