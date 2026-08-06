@@ -1,6 +1,7 @@
 """Manages dvc remotes that user can use with push/pull/status commands."""
 
 from collections.abc import Iterable
+from contextlib import closing
 from typing import TYPE_CHECKING, Optional
 
 from dvc.config import NoRemoteError, RemoteConfigError
@@ -210,16 +211,19 @@ class DataCloud:
             cache = self.repo.cache.legacy
         else:
             cache = self.repo.cache.local
-        with TqdmCallback(
-            desc=f"Pushing to {odb.fs.unstrip_protocol(odb.path)}",
-            unit="file",
-        ) as cb:
+        with (
+            closing(get_index(odb)) as index,
+            TqdmCallback(
+                desc=f"Pushing to {odb.fs.unstrip_protocol(odb.path)}",
+                unit="file",
+            ) as cb,
+        ):
             return self.transfer(
                 cache,
                 odb,
                 objs,
                 jobs=jobs,
-                dest_index=get_index(odb),
+                dest_index=index,
                 cache_odb=cache,
                 validate_status=self._log_missing,
                 callback=cb,
@@ -271,16 +275,19 @@ class DataCloud:
             cache = self.repo.cache.legacy
         else:
             cache = self.repo.cache.local
-        with TqdmCallback(
-            desc=f"Fetching from {odb.fs.unstrip_protocol(odb.path)}",
-            unit="file",
-        ) as cb:
+        with (
+            closing(get_index(odb)) as index,
+            TqdmCallback(
+                desc=f"Fetching from {odb.fs.unstrip_protocol(odb.path)}",
+                unit="file",
+            ) as cb,
+        ):
             return self.transfer(
                 odb,
                 cache,
                 objs,
                 jobs=jobs,
-                src_index=get_index(odb),
+                src_index=index,
                 cache_odb=cache,
                 verify=odb.verify,
                 validate_status=self._log_missing,
@@ -340,14 +347,15 @@ class DataCloud:
             cache = self.repo.cache.legacy
         else:
             cache = self.repo.cache.local
-        return compare_status(
-            cache,
-            odb,
-            objs,
-            jobs=jobs,
-            dest_index=get_index(odb),
-            cache_odb=cache,
-        )
+        with closing(get_index(odb)) as index:
+            return compare_status(
+                cache,
+                odb,
+                objs,
+                jobs=jobs,
+                dest_index=index,
+                cache_odb=cache,
+            )
 
     def get_url_for(self, remote, checksum):
         odb = self.get_remote_odb(remote)
