@@ -966,19 +966,18 @@ def index_from_targets(
                     continue
                 file, name = parse_target(target)
                 if file and not name:
-                    index = Index.from_file(repo, file)
+                    idx = Index.from_file(repo, file)
                 else:
                     stages = repo.stage.collect(target)
-                    index = Index(repo, stages=list(stages))
-                indexes.append(index)
+                    idx = Index(repo, stages=list(stages))
+                indexes.append(idx)
         except (StageFileDoesNotExistError, StageNotFound):
-            # A target that is not a stage/.dvc file (e.g. a granular path inside a
-            # tracked directory) aborts the per-target merge partway through. Reset
-            # to fall back to the full repo index with the original targets, rather
-            # than keeping the partial index built only from the targets parsed
-            # before the failure — using that partial index with the full targets
-            # list silently drops the unparsed targets and can crash checkout (#11075).
-            index = None
+            # A target that is not a stage/.dvc file, such as a granular path
+            # inside a tracked directory, aborts the per-target merge partway
+            # through. Fall back to the full repo index with the original
+            # targets: a partial index built only from the targets parsed
+            # before the failure silently drops the rest (#11075).
+            pass
         else:
             index = Index.from_indexes(repo, indexes)
             targets = None
