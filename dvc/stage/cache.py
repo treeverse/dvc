@@ -8,7 +8,7 @@ from dvc import fs
 from dvc.config import RemoteConfigError
 from dvc.exceptions import CollectCacheError, DvcException
 from dvc.log import logger
-from dvc.utils import dict_sha256, relpath
+from dvc.utils import dict_filter, dict_sha256, relpath
 
 if TYPE_CHECKING:
     from dvc_objects.db import ObjectDB
@@ -28,9 +28,23 @@ class RunCacheNotSupported(DvcException):
 def _get_cache_hash(cache, key=False):
     from dvc_data.hashfile.meta import Meta
 
+    from .params import StageParams
+
     if key:
         cache["outs"] = [out["path"] for out in cache.get("outs", [])]
-    return dict_sha256(cache, exclude=[Meta.PARAM_SIZE, Meta.PARAM_NFILES])
+
+    # size and nfiles are file metadata rather than part of the stage
+    # definition, so they do not belong in the hash. They only ever appear
+    # under deps and outs: excluding them from the whole lockfile would also
+    # drop a parameter named size or nfiles, hiding changes to it from the
+    # run-cache.
+    meta_only = (StageParams.PARAM_DEPS, StageParams.PARAM_OUTS)
+    exclude = [Meta.PARAM_SIZE, Meta.PARAM_NFILES]
+    filtered = {
+        name: dict_filter(value, exclude) if name in meta_only else value
+        for name, value in cache.items()
+    }
+    return dict_sha256(filtered)
 
 
 def _can_hash(stage):

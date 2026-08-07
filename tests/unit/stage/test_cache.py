@@ -203,3 +203,34 @@ def test_unhashable(tmp_dir, dvc, mocker, kwargs):
     with pytest.raises(RunCacheNotFoundError):
         cache.restore(stage)
     get_stage_hash.assert_not_called()
+
+
+def _lockfile(size):
+    return {
+        "cmd": "python script.py",
+        "deps": [{"path": "script.py", "hash": "md5", "md5": "abc", "size": 10}],
+        "params": {"params.yaml": {"size": size, "nfiles": 2}},
+        "outs": [{"path": "out", "hash": "md5", "md5": "def", "size": 3}],
+    }
+
+
+def test_cache_hash_tracks_params_named_like_meta():
+    """A param named size or nfiles must still affect the stage hash.
+
+    The meta exclusion used to apply to the whole lockfile, so a param with
+    one of those names was dropped before hashing and changes to it could not
+    invalidate the run-cache.
+    """
+    from dvc.stage.cache import _get_cache_hash
+
+    assert _get_cache_hash(_lockfile(30)) != _get_cache_hash(_lockfile(40))
+
+
+def test_cache_hash_still_excludes_deps_and_outs_meta():
+    from dvc.stage.cache import _get_cache_hash
+
+    grown = _lockfile(30)
+    grown["deps"][0]["size"] = 4096
+    grown["outs"][0]["size"] = 8192
+
+    assert _get_cache_hash(_lockfile(30)) == _get_cache_hash(grown)
