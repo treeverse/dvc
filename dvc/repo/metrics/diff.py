@@ -16,14 +16,29 @@ class DiffResult(TypedDict, total=False):
     diff: dict[str, dict[str, dict]]
 
 
+def _resolve_rev(result: dict[str, "Result"], rev: str) -> "Result":
+    # Direct hit when brancher emitted this rev as its own key.
+    if rev in result:
+        return result[rev]
+    # Brancher groups revisions resolving to the same SHA under a single
+    # comma-joined composite key (e.g. "main,HEAD" when both resolve to the
+    # same commit). Fall back to lookup by membership so callers passing two
+    # distinct ref names that happen to point at the same commit still get a
+    # result. See https://github.com/iterative/dvc/issues/10429.
+    for key, value in result.items():
+        if rev in key.split(","):
+            return value
+    return {}
+
+
 def _diff(
     result: dict[str, "Result"],
     old_rev: str,
     new_rev: str,
     **kwargs,
 ) -> DiffResult:
-    old = result.get(old_rev, {})
-    new = result.get(new_rev, {})
+    old = _resolve_rev(result, old_rev)
+    new = _resolve_rev(result, new_rev)
 
     old_data = old.get("data", {})
     new_data = new.get("data", {})
