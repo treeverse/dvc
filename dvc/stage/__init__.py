@@ -163,6 +163,7 @@ class Stage(params.StageParams):
         self.desc: Optional[str] = desc
         self.meta = meta
         self.raw_data = RawData()
+        self._frozen_deps: Optional[dict] = None
 
     @property
     def path(self) -> str:
@@ -491,23 +492,35 @@ class Stage(params.StageParams):
 
     def save(self, allow_missing: bool = False, run_cache: bool = True):
         self.save_deps(allow_missing=allow_missing)
-
         self.save_outs(allow_missing=allow_missing)
-
         self.md5 = self.compute_md5()
-
         if run_cache:
             self.repo.stage_cache.save(self)
 
     def save_deps(self, allow_missing=False):
         from dvc.dependency.base import DependencyDoesNotExistError
 
+        frozen = self._frozen_deps
         for dep in self.deps:
             try:
                 dep.save()
             except DependencyDoesNotExistError:
                 if not allow_missing:
                     raise
+                continue
+            pre = frozen.get(id(dep)) if frozen else None
+            if pre is not None and dep.hash_info != pre[0]:
+                logger.warning(
+                    "Dependency '%s' of %s was modified while the stage "
+                    "command was running. Recording its pre-run hash so the "
+                    "outputs stay linked to the inputs that produced them; "
+                    "the stage will be reported as changed on the next run.",
+                    dep,
+                    self,
+                )
+                dep.hash_info = pre[0]
+                if hasattr(dep, "meta"):
+                    dep.meta = pre[1]
 
     def save_outs(self, allow_missing: bool = False):
         from dvc.output import OutputDoesNotExistError
@@ -607,7 +620,6 @@ class Stage(params.StageParams):
         if not dry:
             if no_download:
                 allow_missing = True
-
             no_cache_outs = any(
                 not out.use_cache
                 for out in self.outs
@@ -617,7 +629,6 @@ class Stage(params.StageParams):
                 allow_missing=allow_missing,
                 run_cache=not no_commit and not no_cache_outs,
             )
-
             if no_download:
                 self.ignore_outs()
             if not no_commit:
@@ -625,6 +636,25 @@ class Stage(params.StageParams):
 
     @rwlocked(read=["deps"], write=["outs"])
     def _run_stage(self, dry, force, **kwargs) -> None:
+        if not dry:
+            self._frozen_deps = None
+            old_hashes = {
+                dep: (dep.hash_info, getattr(dep, "meta", None)) for dep in self.deps
+            }
+            # Freeze dependency hashes *before* the command runs, so dvc.lock
+            # records the inputs actually used to produce the outputs.
+            # Recomputing them after the run (in save()) would capture any
+            # change made to a dependency during execution and falsify the
+            # code<->output linkage. See issue #11058.
+            self.save_deps(allow_missing=True)
+            self._frozen_deps = {
+                id(dep): (dep.hash_info, getattr(dep, "meta", None))
+                for dep in self.deps
+            }
+            for dep, (old_hash, old_meta) in old_hashes.items():
+                dep.hash_info = old_hash
+                if hasattr(dep, "meta"):
+                    dep.meta = old_meta
         return run_stage(self, dry, force, **kwargs)
 
     @rwlocked(read=["deps"], write=["outs"])
