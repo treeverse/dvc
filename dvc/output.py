@@ -1059,6 +1059,8 @@ class Output:
                 callback=cb,
             )
 
+        staging.clear()
+
         self.hash_info = obj.hash_info
         self.files = None
         return obj
