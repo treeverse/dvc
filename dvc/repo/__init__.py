@@ -387,15 +387,24 @@ class Repo:
         path: str,
         workspace: str = "repo",
     ) -> tuple["DataIndex", "DataIndexEntry"]:
+        abspath = path
+        if not os.path.isabs(abspath):
+            # `path` is interpreted as relative to the root of the repo, not
+            # the current working directory (which may be a subdirectory of
+            # the repo). See #11029.
+            abspath = self.fs.join(self.root_dir, abspath)
         if self.subrepos:
-            fs_path = self.dvcfs.from_os_path(path)
+            # `from_os_path` returns a path relative to the repo root. Anchor
+            # it at the filesystem root so it is not re-resolved against the
+            # filesystem's current working directory.
+            fs_path = self.dvcfs.from_os_path(abspath)
             fs = self.dvcfs.fs
-            key = fs._get_key_from_relative(fs_path)
+            key = fs._get_key_from_relative(fs.root_marker + fs_path)
             subrepo, _, key = fs._get_subrepo_info(key)
             index = subrepo.index.data[workspace]
         else:
             index = self.index.data[workspace]
-            key = self.fs.relparts(path, self.root_dir)
+            key = self.fs.relparts(abspath, self.root_dir)
 
         try:
             return index, index[key]
