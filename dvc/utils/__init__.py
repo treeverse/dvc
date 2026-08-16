@@ -244,7 +244,10 @@ def env2bool(var, undefined=False):
     var = os.getenv(var, None)
     if var is None:
         return undefined
-    return bool(re.search("1|y|yes|true", var, flags=re.IGNORECASE))
+    # Match the whole value rather than a substring: re.search made any value
+    # containing "1", "y", "yes" or "true" truthy, so a path, branch name or
+    # version string read as enabled.
+    return var.strip().lower() in ("1", "y", "yes", "true")
 
 
 def resolve_output(inp: str, out: Optional[str], force=False) -> str:
