@@ -422,6 +422,13 @@ class Stage(params.StageParams):
         allow_missing = kwargs.get("allow_missing", False)
         pull = kwargs.get("pull", False)
         upstream = kwargs.pop("upstream", None)
+        if self.frozen and not self.is_import:
+            # `dvc freeze` documents a frozen stage as always treated as
+            # unchanged, so `--force` must not reproduce it. The command is
+            # skipped in `run()` either way, but reproducing re-saves the stage
+            # and rewrites its dependency hashes in dvc.lock. Falling through to
+            # the checks below still lets it restore missing outputs.
+            force = False
         if force:
             pass
         # Skip stages with missing data if otherwise unchanged
