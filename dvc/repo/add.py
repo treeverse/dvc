@@ -12,7 +12,7 @@ from dvc.exceptions import (
 )
 from dvc.repo.scm_context import scm_context
 from dvc.ui import ui
-from dvc.utils import glob_targets, resolve_output, resolve_paths
+from dvc.utils import resolve_output, resolve_paths
 
 from . import locked
 
@@ -34,7 +34,25 @@ def find_targets(
         targets_list = [os.fsdecode(targets)]
     else:
         targets_list = [os.fsdecode(target) for target in targets]
-    return glob_targets(targets_list, glob=glob)
+
+    if not glob:
+        return targets_list
+
+    from glob import has_magic, iglob
+
+    from dvc.dvcfile import is_lock_file, is_valid_filename
+
+    results = []
+    for target in targets_list:
+        for match in iglob(target, recursive=True):
+            if has_magic(target) and (is_valid_filename(match) or is_lock_file(match)):
+                continue
+            results.append(match)
+
+    if not results:
+        raise DvcException(f"Glob {targets_list} has no matches.")
+
+    return results
 
 
 PIPELINE_TRACKED_UPDATE_FMT = (
