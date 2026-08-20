@@ -23,6 +23,7 @@ from dvc.output import (
     OutputDoesNotExistError,
     OutputIsStageFileError,
 )
+from dvc.repo.add import find_targets
 from dvc.stage import Stage
 from dvc.stage.exceptions import StageExternalOutputsError, StagePathNotFoundError
 from dvc.utils.fs import path_isin
@@ -234,6 +235,41 @@ def test_add_filtered_files_in_dir(
         # Current dir should not be taken into account
         assert stage.wdir == os.path.dirname(stage.path)
         assert stage.outs[0].def_path in expected_def_paths
+
+
+def test_double_add_glob(tmp_dir, dvc):
+    tmp_dir.gen({"data": {"foo": "foo", "bar": "bar"}})
+    target = os.path.join("data", "*")
+    expected = {
+        os.path.join("data", "foo") + DVC_FILE_SUFFIX,
+        os.path.join("data", "bar") + DVC_FILE_SUFFIX,
+    }
+
+    stages = dvc.add(target, glob=True)
+    assert {stage.relpath for stage in stages} == expected
+
+    stages = dvc.add(target, glob=True)
+    assert {stage.relpath for stage in stages} == expected
+
+
+def test_add_glob_ignores_dvc_metadata(tmp_dir):
+    tmp_dir.gen(
+        {
+            "data": {
+                "foo": "foo",
+                "foo.dvc": "outs: []",
+                "dvc.yaml": "stages: {}",
+                "dvc.lock": "schema: '2.0'",
+            }
+        }
+    )
+
+    assert find_targets(os.path.join("data", "*"), glob=True) == [
+        os.path.join("data", "foo")
+    ]
+    assert find_targets(os.path.join("data", "foo.dvc"), glob=True) == [
+        os.path.join("data", "foo.dvc")
+    ]
 
 
 def test_cmd_add(tmp_dir, dvc):
