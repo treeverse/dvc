@@ -3,7 +3,14 @@ import re
 
 import pytest
 
-from dvc.utils import dict_sha256, fix_env, parse_target, relpath, resolve_output
+from dvc.utils import (
+    dict_sha256,
+    env2bool,
+    fix_env,
+    parse_target,
+    relpath,
+    resolve_output,
+)
 
 
 @pytest.mark.skipif(os.name == "nt", reason="pyenv-win is not supported")
@@ -123,6 +130,26 @@ def test_hint_on_lockfile():
     ) as e:
         assert parse_target("dvc.lock:name")
     assert "dvc.yaml:name" in str(e.value)
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ("1", True),
+        ("Y", True),
+        (" yes ", True),
+        ("TRUE", True),
+        ("0", False),
+        ("no", False),
+        ("false", False),
+        ("my_branch", False),
+        ("v1.0", False),
+    ],
+)
+def test_env2bool_matches_the_entire_value(value, expected, monkeypatch):
+    monkeypatch.setenv("DVC_TEST_ENV2BOOL", value)
+
+    assert env2bool("DVC_TEST_ENV2BOOL") is expected
 
 
 @pytest.mark.parametrize(

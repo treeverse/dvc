@@ -244,7 +244,7 @@ def env2bool(var, undefined=False):
     var = os.getenv(var, None)
     if var is None:
         return undefined
-    return bool(re.search("1|y|yes|true", var, flags=re.IGNORECASE))
+    return var.strip().lower() in {"1", "y", "yes", "true"}
 
 
 def resolve_output(inp: str, out: Optional[str], force=False) -> str:
