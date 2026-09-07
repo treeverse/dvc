@@ -185,6 +185,54 @@ def test_match_ignore_from_file(
     )
 
 
+@pytest.mark.parametrize(
+    "parent_pattern, expected",
+    [
+        ("volumes/functions/**", False),
+        ("volumes/functions/", True),
+    ],
+)
+def test_reinclude_below_parent_pattern(parent_pattern, expected):
+    ignore = DvcIgnorePatterns(
+        [parent_pattern, "!volumes/functions/deno.json"], os.sep, os.sep
+    )
+
+    def match(path, is_dir=False):
+        result, patterns = ignore.matches(os.sep, path, is_dir, details=True)
+        return result, [pattern.patterns for pattern in patterns]
+
+    expected_file_pattern = (
+        parent_pattern if expected else "!volumes/functions/deno.json"
+    )
+    assert match(join("volumes", "functions", "deno.json")) == (
+        expected,
+        [expected_file_pattern],
+    )
+    assert match(join("volumes", "functions", "other.py")) == (
+        True,
+        [parent_pattern],
+    )
+
+    expected_parent = (expected, [parent_pattern] if expected else [])
+    assert match(join("volumes", "functions"), is_dir=True) == expected_parent
+    assert match(join("volumes", "functions", ""), is_dir=True) == expected_parent
+
+
+@pytest.mark.parametrize(
+    "pattern, directory",
+    [
+        ("foo", "foo"),
+        ("foo*", "foobar"),
+        ("data/*", join("data", "subdir")),
+    ],
+)
+def test_file_pattern_matches_directory(pattern, directory):
+    ignore = DvcIgnorePatterns([pattern], os.sep, os.sep)
+
+    assert ignore.matches(os.sep, directory, True)
+    assert ignore.matches(os.sep, join(directory, ""), True)
+
+
 @pytest.mark.parametrize("sub_dir", ["", "dir"])
 @pytest.mark.parametrize("omit_dir", [".git", ".hg", ".dvc"])
 def test_should_ignore_dir(omit_dir, sub_dir):
