@@ -41,7 +41,11 @@ def _can_hash(stage):
         return False
 
     for dep in stage.deps:
-        if not (dep.protocol == "local" and dep.def_path and dep.get_hash()):
+        # Dry reproduction can reach the run cache with unpulled dependencies.
+        # Without their contents we cannot look up a cached run.
+        if not (
+            dep.protocol == "local" and dep.def_path and dep.exists and dep.get_hash()
+        ):
             return False
 
     for out in stage.outs:

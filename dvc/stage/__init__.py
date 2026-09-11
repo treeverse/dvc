@@ -318,7 +318,7 @@ class Stage(params.StageParams):
             if status:
                 if allow_missing and status[str(dep)] == "deleted":
                     if upstream and any(
-                        dep.fs_path == out.fs_path and dep.hash_info != out.hash_info
+                        self._changed_missing_dep(dep, out)
                         for stage in upstream
                         for out in stage.outs
                     ):
@@ -333,6 +333,54 @@ class Stage(params.StageParams):
                 )
                 return True
         return False
+
+    @staticmethod
+    def _changed_missing_dep(dep: "Dependency", out: "Output") -> bool:
+        from dvc_data.hashfile.tree import Tree
+        from dvc_objects.errors import ObjectFormatError
+
+        if dep.fs_path == out.fs_path:
+            return dep.hash_info != out.hash_info
+        if not (
+            out.hash_info
+            and out.hash_info.isdir
+            and dep.protocol == out.protocol
+            and out.fs.isin(dep.fs_path, out.fs_path)
+        ):
+            return False
+
+        # A missing dependency may be a file/subdirectory of an upstream output.
+        # Compare its recorded hash with that manifest, not the entire output hash:
+        # changes to siblings must not invalidate this dependency.
+        try:
+            if isinstance(out.obj, Tree):
+                tree = out.obj
+            else:
+                try:
+                    tree = Tree.load(out.cache, out.hash_info)
+                except FileNotFoundError:
+                    assert out.repo
+                    odb = out.repo.cloud.get_remote_odb(
+                        name=out.remote, hash_name=out.hash_name
+                    )
+                    # get_dir_cache/cloud.pull may fetch payloads too.
+                    tree = Tree.load(odb, out.hash_info)
+        except (FileNotFoundError, ObjectFormatError) as exc:
+            raise DvcException(
+                f"Cannot check missing dependency '{dep}': directory manifest "
+                f"for '{out}' is missing or invalid."
+            ) from exc
+        tree.digest()
+        if tree.hash_info.value != out.hash_info.value:
+            raise DvcException(f"Directory manifest checksum mismatch for '{out}'.")
+        tree.hash_info = out.hash_info
+        out.obj = tree
+        prefix = out.fs.relparts(dep.fs_path, out.fs_path)
+        obj = tree.get_obj(out.cache, prefix)
+        if isinstance(obj, Tree):
+            # get_obj computes subdirectory digests as md5 even for legacy trees.
+            obj.hash_info.name = out.hash_info.name
+        return obj is None or obj.hash_info != dep.hash_info
 
     @rwlocked(read=["outs"])
     def changed_outs(self, allow_missing: bool = False) -> bool:
