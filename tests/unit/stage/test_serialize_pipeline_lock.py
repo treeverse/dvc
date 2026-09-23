@@ -134,6 +134,17 @@ def test_lock_params_without_targets(dvc, info, expected):
     }
 
 
+def test_lock_params_keeps_def_path(dvc):
+    stage = create_stage(
+        PipelineStage, dvc, params=[{"./my_params.yaml": None}], **kwargs
+    )
+    stage.deps[0].fill_values({"foo": "foo"})
+    assert to_single_stage_lockfile(stage) == {
+        "cmd": "command",
+        "params": {"./my_params.yaml": OrderedDict({"foo": "foo"})},
+    }
+
+
 @pytest.mark.parametrize("typ", ["plots", "metrics", "outs"])
 def test_lock_outs(dvc, typ):
     stage = create_stage(PipelineStage, dvc, **{typ: ["input"]}, **kwargs)

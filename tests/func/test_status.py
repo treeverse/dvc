@@ -138,6 +138,18 @@ def test_status_outputs(tmp_dir, dvc):
     }
 
 
+def test_params_file_with_dot_slash_path(tmp_dir, dvc):
+    tmp_dir.gen("my_params.yaml", "foo: 1")
+    dvc.stage.add(
+        name="test", cmd="echo my_params.yaml", params=[{"./my_params.yaml": None}]
+    )
+    dvc.reproduce()
+    assert (tmp_dir / "dvc.lock").parse()["stages"]["test"]["params"] == {
+        "./my_params.yaml": {"foo": 1}
+    }
+    assert dvc.status() == {}
+
+
 def test_params_without_targets(tmp_dir, dvc):
     dvc.stage.add(name="test", cmd="echo params.yaml", params=[{"params.yaml": None}])
     assert dvc.status() == {"test": [{"changed deps": {"params.yaml": "deleted"}}]}
