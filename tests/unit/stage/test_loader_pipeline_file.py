@@ -214,6 +214,22 @@ def test_load_stage_with_params(dvc, stage_data, lock_data):
     assert stage.outs[0].hash_info == HashInfo("md5", "bar_checksum")
 
 
+def test_load_stage_with_params_def_path_roundtrip(dvc, stage_data):
+    from dvc.stage.serialize import to_single_stage_lockfile
+
+    stage_data["params"] = [{"./my_params.yaml": None}]
+    dvcfile = load_file(dvc, PROJECT_FILE)
+    stage = StageLoader.load_stage(dvcfile, "stage-1", stage_data)
+    params, _ = split_params_deps(stage)
+    params[0].fill_values({"foo": 1})
+    lock_data = to_single_stage_lockfile(stage)
+
+    stage = StageLoader.load_stage(dvcfile, "stage-1", stage_data, lock_data)
+    params, _ = split_params_deps(stage)
+    assert params[0].def_path == "./my_params.yaml"
+    assert params[0].hash_info == HashInfo("params", {"foo": 1})
+
+
 @pytest.mark.parametrize("typ", ["metrics", "plots"])
 def test_load_stage_with_metrics_and_plots(dvc, stage_data, lock_data, typ):
     stage_data[typ] = stage_data.pop("outs")
