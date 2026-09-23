@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from dvc.stage import PipelineStage, Stage
 
 PARAM_PARAMS = ParamsDependency.PARAM_PARAMS
-PARAM_PATH = ParamsDependency.PARAM_PATH
 
 PARAM_DEPS = StageParams.PARAM_DEPS
 PARAM_OUTS = StageParams.PARAM_OUTS
@@ -101,8 +100,7 @@ def _serialize_params_values(params: list[ParamsDependency]):
     """
     key_vals = OrderedDict()
     for param_dep in sorted(params, key=attrgetter("def_path")):
-        dump = param_dep.dumpd()
-        path, params = dump[PARAM_PATH], dump[PARAM_PARAMS]
+        path, params = param_dep.def_path, param_dep.dumpd()[PARAM_PARAMS]
         if isinstance(params, dict):
             kv = [(key, params[key]) for key in sorted(params.keys())]
             key_vals[path] = OrderedDict(kv)
