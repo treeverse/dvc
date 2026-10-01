@@ -289,6 +289,39 @@ def test_pull_import_no_download_rev_lock(tmp_dir, dvc, erepo_dir):
     assert (tmp_dir / "foo_imported").read_text() == "foo content"
 
 
+def test_pull_import_no_download_after_update(tmp_dir, dvc, erepo_dir):
+    with erepo_dir.chdir():
+        erepo_dir.dvc_gen({"dir": {"foo": "foo content"}}, commit="add")
+
+    dvc.imp(os.fspath(erepo_dir), "dir", "dir_imported", no_download=True)
+    dvc.pull(["dir_imported.dvc"])
+    assert (tmp_dir / "dir_imported" / "foo").read_text() == "foo content"
+
+    with erepo_dir.chdir():
+        erepo_dir.dvc_gen({"dir": {"foo": "modified foo content"}}, commit="modify")
+
+    dvc.update(["dir_imported.dvc"], no_download=True)
+    dvc.pull(["dir_imported.dvc"])
+    assert (tmp_dir / "dir_imported" / "foo").read_text() == "modified foo content"
+
+
+def test_pull_import_no_download_same_path_from_two_repos(
+    tmp_dir, dvc, make_tmp_dir, erepo_dir
+):
+    erepo2 = make_tmp_dir("erepo2", scm=True, dvc=True)
+    with erepo_dir.chdir():
+        erepo_dir.dvc_gen({"dir": {"foo": "foo content"}}, commit="add")
+    with erepo2.chdir():
+        erepo2.dvc_gen({"dir": {"foo": "other foo content"}}, commit="add")
+
+    dvc.imp(os.fspath(erepo_dir), "dir", "dir1", no_download=True)
+    dvc.imp(os.fspath(erepo2), "dir", "dir2", no_download=True)
+    dvc.pull(["dir1.dvc"])
+    dvc.pull(["dir2.dvc"])
+    assert (tmp_dir / "dir1" / "foo").read_text() == "foo content"
+    assert (tmp_dir / "dir2" / "foo").read_text() == "other foo content"
+
+
 def test_cache_type_is_properly_overridden(tmp_dir, scm, dvc, erepo_dir):
     with erepo_dir.chdir():
         with erepo_dir.dvc.config.edit() as conf:
