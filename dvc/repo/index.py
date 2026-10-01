@@ -197,7 +197,12 @@ def _load_storage_from_import(storage_map, key, out):
 
     dep = out.stage.deps[0]
     if not out.hash_info or dep.fs.version_aware:
-        if dep.meta and dep.meta.isdir:
+        if out.stage.is_repo_import:
+            # repo dependencies carry no meta, their source is the url+rev_lock
+            meta_token = tokenize(
+                dep.def_repo[dep.PARAM_URL], dep.def_repo.get(dep.PARAM_REV_LOCK)
+            )
+        elif dep.meta and dep.meta.isdir:
             meta_token = dep.hash_info.value
         else:
             meta_token = tokenize(dep.meta.to_dict())
