@@ -113,3 +113,15 @@ def test_iter_revs(tmp_dir, scm, mocker):
         rev_old: [rev_old],
         rev_other: [rev_other],
     }
+
+
+def test_clone_fetches_exps_from_cloned_remote(mocker):
+    from dvc.scm import clone
+
+    git = mocker.MagicMock()
+    mocker.patch("scmrepo.git.Git.clone", return_value=git)
+    fetch_all_exps = mocker.patch("dvc.repo.experiments.utils.fetch_all_exps")
+
+    assert clone("git@example.com:iterative/dvc.git", "dir") is git
+
+    fetch_all_exps.assert_called_once_with(git, "origin", progress=mocker.ANY)
