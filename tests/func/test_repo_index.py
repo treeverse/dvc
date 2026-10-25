@@ -431,3 +431,32 @@ def test_index_from_targets(tmp_dir, dvc):
 
     with pytest.raises(NoOutputOrStageError):
         index = index_from_targets(dvc, ["not-existing-stage"])
+
+
+def test_data_index_reuses_remote_per_name(tmp_dir, dvc, make_cloud, mocker):
+    # https://github.com/treeverse/dvc/issues/11121
+    from dvc.data_cloud import DataCloud
+
+    tmp_dir.add_remote(config=make_cloud(typ="local").config, name="first")
+    tmp_dir.add_remote(
+        config=make_cloud(typ="local").config, name="second", default=False
+    )
+    stages = tmp_dir.dvc_gen({f"dir{i}": {"file": f"content {i}"} for i in range(4)})
+    # route one output to the non-default remote
+    (stage,) = (s for s in stages if s.outs[0].def_path == "dir3")
+    stage.outs[0].remote = "second"
+    stage.dump()
+    dvc._reset()
+
+    spy = mocker.spy(DataCloud, "get_remote")
+    data = dvc.index.data["repo"]
+
+    assert sorted(call.args[1] or "" for call in spy.call_args_list) == [
+        "",
+        "second",
+    ]
+    odbs = {id(data.storage_map[(f"dir{i}",)].remote.odb) for i in range(3)}
+    assert len(odbs) == 1
+    assert data.storage_map[("dir3",)].remote.odb.path != (
+        data.storage_map[("dir0",)].remote.odb.path
+    )
