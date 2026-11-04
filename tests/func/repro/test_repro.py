@@ -1296,3 +1296,103 @@ def test_repro_external_outputs(tmp_dir, dvc, local_workspace, persist):
     assert (local_workspace / "foo").read_text() == "foo"
     assert (local_workspace / "bar").read_text() == "foo"
     assert not (local_workspace / "cache").exists()
+
+
+def _dep_builds(spy, path):
+    return [c for c in spy.call_args_list if c.args[1] == path]
+
+
+def test_repro_builds_dependency_once_before_and_once_after_the_command(
+    tmp_dir, dvc, mocker
+):
+    from dvc import output
+
+    tmp_dir.gen({"data": {f"f{i}": str(i) for i in range(5)}})
+    stage = dvc.stage.add(name="s", cmd="echo out > out", deps=["data"], outs=["out"])
+    data_path = (tmp_dir / "data").fs_path
+
+    spy = mocker.spy(output, "build")
+    dvc.reproduce("s")
+
+    # Checking for changes, the run-cache lookup and the save before the
+    # command all reuse one build; the save after the command needs a new one.
+    assert len(_dep_builds(spy, data_path)) == 2
+    assert stage.dep_builds is None
+    (lock_dep,) = (tmp_dir / LOCK_FILE).parse()["stages"]["s"]["deps"]
+    assert lock_dep["md5"] == dvc.stage.collect("s")[0].deps[0].get_hash().value
+
+
+def test_repro_restored_from_run_cache_reuses_dependency_build(tmp_dir, dvc, mocker):
+    from dvc import output
+
+    tmp_dir.gen({"data": {"a": "a", "b": "b"}})
+    dvc.stage.add(name="s", cmd="echo out > out", deps=["data"], outs=["out"])
+    dvc.reproduce("s")
+    lock = (tmp_dir / LOCK_FILE).read_text()
+    (tmp_dir / LOCK_FILE).unlink()
+    (tmp_dir / "out").unlink()
+
+    data_path = (tmp_dir / "data").fs_path
+    spy = mocker.spy(output, "build")
+    dvc.reproduce("s")
+
+    assert (tmp_dir / "out").read_text().strip() == "out"
+    assert (tmp_dir / LOCK_FILE).read_text() == lock
+    # One build to look the stage up and restore it, one after the restore.
+    assert len(_dep_builds(spy, data_path)) == 2
+
+
+def test_repro_rehashes_a_dependency_its_command_modifies(tmp_dir, dvc):
+    # A build from before the command must not be reused after it.
+    tmp_dir.gen("dep", "before")
+    dvc.stage.add(
+        name="s",
+        cmd="python -c \"open('dep', 'a').write('-after')\" && echo out > out",
+        deps=["dep"],
+        outs=["out"],
+    )
+    dvc.reproduce("s")
+
+    (lock_dep,) = (tmp_dir / LOCK_FILE).parse()["stages"]["s"]["deps"]
+    assert (tmp_dir / "dep").read_text() == "before-after"
+    assert lock_dep["md5"] == file_md5("dep", dvc.fs)
+
+
+def test_repro_downstream_sees_upstream_output_change(tmp_dir, dvc):
+    # Builds are reused within a stage only, so a stage that depends on another
+    # stage's output always hashes what that stage just wrote.
+    tmp_dir.gen("src", "1")
+    dvc.stage.add(
+        name="up",
+        cmd="python -c \"import shutil; shutil.copy('src', 'mid')\"",
+        deps=["src"],
+        outs=["mid"],
+    )
+    dvc.stage.add(name="down", cmd="echo out > out", deps=["mid"], outs=["out"])
+    dvc.reproduce()
+
+    tmp_dir.gen("src", "2")
+    stages = dvc.reproduce()
+
+    assert [s.addressing for s in stages] == ["up", "down"]
+    lock = (tmp_dir / LOCK_FILE).parse()["stages"]
+    assert lock["down"]["deps"][0]["md5"] == file_md5("mid", dvc.fs)
+    assert lock["up"]["outs"][0]["md5"] == lock["down"]["deps"][0]["md5"]
+
+
+def test_repro_forgets_dependency_builds_when_the_command_fails(tmp_dir, dvc, mocker):
+    tmp_dir.gen("dep", "dep")
+    dvc.stage.add(name="s", cmd="exit 1", deps=["dep"], outs=["out"])
+    scopes = []
+    original = Stage.reuse_dep_builds
+
+    def watched(self):
+        scopes.append(self)
+        return original(self)
+
+    mocker.patch.object(Stage, "reuse_dep_builds", watched)
+    with pytest.raises(ReproductionError):
+        dvc.reproduce("s")
+
+    assert scopes
+    assert all(stage.dep_builds is None for stage in scopes)

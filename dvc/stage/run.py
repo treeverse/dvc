@@ -167,16 +167,25 @@ def run_stage(stage, dry=False, force=False, run_env=None, **kwargs):
     if not force:
         if kwargs.get("pull") and not dry:
             _pull_missing_deps(stage)
+            # A dependency that was missing when it was first checked may be
+            # here now.
+            stage.forget_dep_builds()
 
         from .cache import RunCacheNotFoundError
 
         try:
             stage.repo.stage_cache.restore(stage, dry=dry, **kwargs)
             if not dry:
+                stage.forget_dep_builds()
                 return
         except RunCacheNotFoundError:
             if not dry:
                 stage.save_deps()
 
     run = cmd_run if dry else unlocked_repo(cmd_run)
-    run(stage, dry=dry, run_env=run_env)
+    try:
+        run(stage, dry=dry, run_env=run_env)
+    finally:
+        # The command may have touched its own dependencies, and the repo was
+        # unlocked while it ran, so nothing built before it can be trusted.
+        stage.forget_dep_builds()

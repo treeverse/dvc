@@ -44,6 +44,19 @@ class Dependency(Output):
             self.meta = self.get_meta()
             self.fs_path = self.fs.version_path(self.fs_path, self.meta.version_id)
 
+    def _build(self, *args, **kwargs):
+        # Dependencies never use the cache, so their builds are dry runs with
+        # no side effects, and an identical one can be reused while the stage
+        # says nothing has changed. Only workspace paths: anything outside
+        # the repo can change under us at any time.
+        builds = getattr(self.stage, "dep_builds", None)
+        if builds is None or not kwargs.get("dry_run") or not self.is_in_repo:
+            return super()._build(*args, **kwargs)
+        key = (self.fs_path, self.hash_name)
+        if key not in builds:
+            builds[key] = super()._build(*args, **kwargs)
+        return builds[key]
+
     def download(self, to, jobs=None):
         return fs_download(self.fs, self.fs_path, to.fs_path, jobs=jobs)
 
