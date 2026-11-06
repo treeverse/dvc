@@ -345,3 +345,12 @@ def test_stage_add_duplicated_output(tmp_dir, dvc):
         ),
     ):
         dvc.stage.add(name="duplicated", cmd="echo bar > foo", outs=["foo"])
+
+
+def test_stage_add_force_drops_replaced_outs_from_gitignore(tmp_dir, scm, dvc):
+    dvc.stage.add(name="train", cmd="echo foo", outs=["file1", "file2"])
+    assert (tmp_dir / ".gitignore").read_text().splitlines() == ["/file1", "/file2"]
+
+    dvc.stage.add(name="train", cmd="echo foo", outs=["file1", "file3"], force=True)
+
+    assert (tmp_dir / ".gitignore").read_text().splitlines() == ["/file1", "/file3"]

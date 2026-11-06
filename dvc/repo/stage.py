@@ -131,6 +131,7 @@ class StageLoad:
             force=force,
             **stage_data,
         )
+        replaced = self._load_replaced(stage) if force else None
         stage.dump(update_lock=update_lock)
         try:
             stage.ignore_outs()
@@ -141,7 +142,25 @@ class StageLoad:
                 " the stage is run."
             )
 
+        if replaced is not None:
+            kept = {out.fspath for out in stage.outs}
+            for out in replaced.outs:
+                if out.fspath not in kept:
+                    out.ignore_remove()
+
         return stage
+
+    def _load_replaced(self, stage: "Stage") -> Optional["Stage"]:
+        """Returns the stage in dvc.yaml that `stage` is about to overwrite."""
+        from dvc.dvcfile import load_file
+        from dvc.stage import PipelineStage
+
+        if not isinstance(stage, PipelineStage):
+            return None
+        dvcfile = load_file(self.repo, stage.path)
+        if not dvcfile.exists() or stage.name not in dvcfile.stages:
+            return None
+        return dvcfile.stages[stage.name]
 
     def create(
         self,
