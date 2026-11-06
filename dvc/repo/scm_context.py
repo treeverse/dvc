@@ -1,4 +1,5 @@
 import logging
+import os
 import shlex
 from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
@@ -19,6 +20,19 @@ if TYPE_CHECKING:
 logger = logger.getChild(__name__)
 
 
+def _quote_cmd_arg(arg: str) -> str:
+    """Quote an argument for an interactive cmd.exe command line."""
+    escaped = "".join(
+        "%^" if char == "%" else f"^{char}" if char in ' \t"&<>()|^!' else char
+        for char in arg
+    )
+    return f'^"{escaped}^"'
+
+
+def _is_cmd_shell() -> bool:
+    return os.name == "nt" and not os.getenv("SHELL")
+
+
 class SCMContext:
     def __init__(self, scm: "Base", config: Optional[dict[str, Any]] = None) -> None:
         from funcy import get_in
@@ -37,7 +51,8 @@ class SCMContext:
 
     @staticmethod
     def _make_git_add_cmd(paths: Union[str, Iterable[str]]) -> str:
-        files = " ".join(map(shlex.quote, ensure_list(paths)))
+        quote = _quote_cmd_arg if _is_cmd_shell() else shlex.quote
+        files = " ".join(map(quote, ensure_list(paths)))
         return f"\tgit add {files}"
 
     def add(self, paths: Union[str, Iterable[str]]) -> None:
