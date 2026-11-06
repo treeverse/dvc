@@ -33,6 +33,39 @@ def test_scm_track_file(scm_context):
     assert scm_context.files_to_track == {"foo", "bar"}
 
 
+@pytest.mark.parametrize(
+    "paths, expected",
+    [
+        ([r"data\data.xml.dvc"], '\tgit add ^"data\\data.xml.dvc^"'),
+        ([r"data\my file.dvc"], '\tgit add ^"data\\my^ file.dvc^"'),
+        (
+            [r"data\data.xml.dvc", r"data\.gitignore"],
+            '\tgit add ^"data\\data.xml.dvc^" ^"data\\.gitignore^"',
+        ),
+        ([r"data\it's.dvc"], '\tgit add ^"data\\it\'s.dvc^"'),
+        ([r"data\a&b(1).dvc"], '\tgit add ^"data\\a^&b^(1^).dvc^"'),
+        (
+            [r"data\%USERPROFILE%!.dvc"],
+            '\tgit add ^"data\\%^USERPROFILE%^^!.dvc^"',
+        ),
+    ],
+)
+def test_make_git_add_cmd_for_cmd(mocker, paths, expected):
+    mocker.patch("dvc.repo.scm_context.os.name", "nt")
+    mocker.patch.dict("dvc.repo.scm_context.os.environ", clear=True)
+
+    assert SCMContext._make_git_add_cmd(paths) == expected
+
+
+def test_make_git_add_cmd_for_posix_shell_on_windows(mocker):
+    mocker.patch("dvc.repo.scm_context.os.name", "nt")
+    mocker.patch.dict("dvc.repo.scm_context.os.environ", {"SHELL": "/bin/bash"})
+
+    assert SCMContext._make_git_add_cmd([r"data\data.xml.dvc"]) == (
+        "\tgit add 'data\\data.xml.dvc'"
+    )
+
+
 def test_scm_track_changed_files(scm_context):
     scm_context.track_changed_files()
     scm_context.scm.add.assert_not_called()
