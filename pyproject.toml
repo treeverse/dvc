@@ -87,7 +87,8 @@ gdrive = ["dvc-gdrive>=3,<4"]
 gs = ["dvc-gs>=3.0.2,<4"]
 hdfs = ["dvc-hdfs>=3,<4"]
 lint = [
-    "mypy==1.19.1",
+    "mypy==1.19.1; python_version < '3.10'",
+    "mypy==2.4.1; python_version >= '3.10'",
     "pandas-stubs",
     "types-colorama",
     "types-psutil",
@@ -221,14 +222,12 @@ warn_unused_configs = true
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = [
-    "agate.*",
     "celery.*",
     "configobj.*",
     "dpath.*",
     "distro",
     "dvc_http",
     "dvc_render.*",
-    "dvc_ssh",
     "dvc_studio_client.*",
     "flatten_dict",
     "fsspec.*",
@@ -242,7 +241,6 @@ module = [
     "pyinstrument",
     "pyparsing",
     "pytest_benchmark.*",
-    "pytest_docker.plugin",
     "ruamel.*",
     "ruamel.yaml.*",
     "shortuuid",
