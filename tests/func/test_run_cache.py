@@ -49,6 +49,29 @@ def test_restore(tmp_dir, dvc, run_copy, mocker):
     assert (tmp_dir / LOCK_FILE).exists()
 
 
+def test_restore_tracks_params_named_like_meta(tmp_dir, dvc):
+    # https://github.com/treeverse/dvc/issues/10296
+    tmp_dir.gen(
+        {
+            "params.yaml": "size: 30",
+            "script.py": 'open("out", "w").write(open("params.yaml").read())',
+        }
+    )
+    dvc.stage.add(
+        name="write-out",
+        cmd="python script.py",
+        deps=["script.py"],
+        params=["size"],
+        outs=["out"],
+    )
+    dvc.reproduce()
+
+    (tmp_dir / "params.yaml").write_text("size: 40")
+    dvc.reproduce()
+
+    assert (tmp_dir / "out").read_text() == "size: 40"
+
+
 def test_save(tmp_dir, dvc, run_copy):
     run_cache_dir = dvc.stage_cache.cache_dir
     assert not os.path.exists(run_cache_dir)

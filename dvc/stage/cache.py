@@ -28,23 +28,16 @@ class RunCacheNotSupported(DvcException):
 def _get_cache_hash(cache, key=False):
     from dvc_data.hashfile.meta import Meta
 
-    from .params import StageParams
-
     if key:
         cache["outs"] = [out["path"] for out in cache.get("outs", [])]
 
-    # size and nfiles are file metadata rather than part of the stage
-    # definition, so they do not belong in the hash. They only ever appear
-    # under deps and outs: excluding them from the whole lockfile would also
-    # drop a parameter named size or nfiles, hiding changes to it from the
-    # run-cache.
-    meta_only = (StageParams.PARAM_DEPS, StageParams.PARAM_OUTS)
+    # size/nfiles are file meta in deps/outs, but can also be param names
     exclude = [Meta.PARAM_SIZE, Meta.PARAM_NFILES]
-    filtered = {
-        name: dict_filter(value, exclude) if name in meta_only else value
-        for name, value in cache.items()
+    cache = {
+        k: dict_filter(v, exclude) if k in ("deps", "outs") else v
+        for k, v in cache.items()
     }
-    return dict_sha256(filtered)
+    return dict_sha256(cache)
 
 
 def _can_hash(stage):
