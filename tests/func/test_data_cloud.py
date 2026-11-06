@@ -222,44 +222,6 @@ def test_verify_hashes(tmp_dir, scm, dvc, mocker, tmp_path_factory, local_remote
     assert hash_spy.call_count == 10
 
 
-def test_pull_mixed_dvcfile_and_granular_targets(tmp_dir, scm, dvc, local_remote):
-    """Regression test for #11075.
-
-    A ``pull`` target list that mixes a ``.dvc``-file target with a granular path
-    inside a tracked directory used to build a partial index from only the
-    ``.dvc`` target while still filtering against the full target list, so the
-    granular target was silently skipped (or, when the directory had drifted,
-    ``checkout`` crashed with an uncaught ``KeyError``).
-    """
-    tmp_dir.dvc_gen(
-        {"datadir": {"f1.txt": "one", "f2.txt": "two", "f3.txt": "three"}},
-        commit="add dir",
-    )
-    tmp_dir.dvc_gen("single.csv", "single", commit="add single")
-    dvc.push()
-
-    mixed_targets = ["single.csv.dvc", join("datadir", "f1.txt")]
-
-    # Fresh-clone state: the granular target must be checked out, not skipped.
-    remove("datadir")
-    remove("single.csv")
-    dvc.cache.local.clear()
-
-    dvc.pull(mixed_targets)
-
-    assert (tmp_dir / "datadir" / "f1.txt").read_text() == "one"
-    assert (tmp_dir / "single.csv").read_text() == "single"
-
-    # A drifted (untracked) file inside the tracked directory must not turn the
-    # mixed-target pull into an uncaught KeyError during checkout.
-    dvc.pull()
-    (tmp_dir / "datadir" / "extra-drift.txt").write_text("extra")
-
-    dvc.pull(mixed_targets)  # must not raise
-
-    assert (tmp_dir / "datadir" / "f1.txt").read_text() == "one"
-
-
 # @pytest.mark.flaky(reruns=3)
 @pytest.mark.parametrize("erepo_type", ["git_dir", "erepo_dir"])
 def test_pull_git_imports(request, tmp_dir, dvc, scm, erepo_type):
@@ -610,6 +572,16 @@ def test_pull_partial(tmp_dir, dvc, local_remote):
         "stats": empty_stats | {"fetched": 2, "added": 1},
     }
     assert (tmp_dir / "foo").read_text() == {"bar": {"baz": "baz"}}
+
+
+def test_push_mixed_dvcfile_and_path_targets(tmp_dir, dvc, local_remote):
+    # https://github.com/treeverse/dvc/issues/11075
+    tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar"}})
+    tmp_dir.dvc_gen("file", "file")
+
+    # file, dir/foo and the .dir manifest, but not dir/bar
+    assert dvc.push(["file.dvc", os.path.join("dir", "foo")]) == 3
+    assert len(recurse_list_dir(local_remote.url)) == 3
 
 
 def test_output_remote(tmp_dir, dvc, make_remote):

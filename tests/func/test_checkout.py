@@ -951,3 +951,17 @@ def test_checkout_loads_specific_file(tmp_dir, dvc, mocker):
     spy.assert_called_with(f)
     assert (tmp_dir / "foo").exists()
     assert not (tmp_dir / "bar").exists()
+
+
+@pytest.mark.parametrize("force", [False, True])
+def test_checkout_mixed_dvcfile_and_path_targets_with_untracked_file(
+    tmp_dir, dvc, force
+):
+    # https://github.com/treeverse/dvc/issues/11075
+    tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar"}})
+    tmp_dir.dvc_gen("file", "file")
+    (tmp_dir / "dir" / "untracked").write_text("untracked")
+
+    dvc.checkout(["file.dvc", os.path.join("dir", "foo")], force=force)
+
+    assert (tmp_dir / "dir" / "foo").read_text() == "foo"
