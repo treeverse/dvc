@@ -51,19 +51,8 @@ def test_restore(tmp_dir, dvc, run_copy, mocker):
 
 def test_restore_tracks_params_named_like_meta(tmp_dir, dvc):
     # https://github.com/treeverse/dvc/issues/10296
-    tmp_dir.gen(
-        {
-            "params.yaml": "size: 30",
-            "script.py": 'open("out", "w").write(open("params.yaml").read())',
-        }
-    )
-    dvc.stage.add(
-        name="write-out",
-        cmd="python script.py",
-        deps=["script.py"],
-        params=["size"],
-        outs=["out"],
-    )
+    tmp_dir.gen("params.yaml", "size: 30")
+    dvc.stage.add(name="copy", cmd="cp params.yaml out", params=["size"], outs=["out"])
     dvc.reproduce()
 
     (tmp_dir / "params.yaml").write_text("size: 40")
