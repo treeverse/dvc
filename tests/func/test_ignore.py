@@ -7,7 +7,7 @@ import pytest
 from dvc.ignore import DvcIgnore, DvcIgnorePatterns
 from dvc.output import OutputIsIgnoredError
 from dvc.pathspec_math import PatternInfo, merge_patterns
-from dvc.repo import Repo
+from dvc.repo import Repo, lock_repo
 from dvc.testing.tmp_dir import TmpDir
 from dvc_data.hashfile.build import IgnoreInCollectedDirError
 from dvc_data.hashfile.utils import get_mtime_and_size
@@ -225,6 +225,38 @@ def test_ignore_external(tmp_dir, scm, dvc, tmp_path_factory):
     }
     assert dvc.dvcignore.is_ignored_dir(os.fspath(ext_dir / "tmp")) is False
     assert dvc.dvcignore.is_ignored_file(os.fspath(ext_dir / "y.backup")) is False
+
+
+def test_subdir_repo_uses_scm_root_dvcignore_for_external_dependency(tmp_dir, scm):
+    tmp_dir.gen(
+        {
+            ".dvcignore": "*.pyc\n",
+            "main_lib": {"foo.py": "VALUE = 1\n"},
+            "sudirs_monorepo": {"proj1": {}},
+        }
+    )
+
+    subrepo_dir = tmp_dir / "sudirs_monorepo" / "proj1"
+    with subrepo_dir.chdir():
+        repo = Repo.init(subdir=True)
+        stage = repo.stage.create(
+            name="check-main-lib",
+            cmd="echo check",
+            deps=[os.path.join("..", "..", "main_lib")],
+            outs=[],
+        )
+        stage.save(run_cache=False)
+
+        pycache_dir = tmp_dir / "main_lib" / "__pycache__"
+        pycache_dir.mkdir()
+        (pycache_dir / "foo.pyc").write_bytes(b"ignored bytecode")
+
+        with lock_repo(repo):
+            assert not stage.changed_deps()
+
+        (tmp_dir / "main_lib" / "new.txt").write_text("not ignored")
+        with lock_repo(repo):
+            assert stage.changed_deps()
 
 
 def test_ignore_resurface_subrepo(tmp_dir, scm, dvc):
