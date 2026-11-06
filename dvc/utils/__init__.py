@@ -223,11 +223,13 @@ def relpath(path, start=os.curdir):
     path = os.path.abspath(os.fspath(path))
     start = os.path.abspath(os.fspath(start))
 
-    # Windows path on different drive than curdir doesn't have relpath
-    if os.name == "nt" and not os.path.commonprefix([start, path]):
-        return path
-
-    return os.path.relpath(path, start)
+    try:
+        return os.path.relpath(path, start)
+    except ValueError:
+        # Windows: no relative path between different drives or UNC shares
+        if os.name == "nt":
+            return path
+        raise
 
 
 def as_posix(path: str) -> str:
