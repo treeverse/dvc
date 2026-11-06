@@ -52,7 +52,7 @@ def _used_obj_ids_not_in_remote(
 
 
 @locked
-def gc(  # noqa: C901, PLR0912, PLR0913
+def gc(  # noqa: C901, PLR0912, PLR0913, PLR0917
     self: "Repo",
     all_branches: bool = False,
     cloud: bool = False,

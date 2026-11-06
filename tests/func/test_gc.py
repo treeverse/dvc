@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 import logging
 import os
 import shutil
@@ -318,8 +318,8 @@ def test_gc_rev_num(tmp_dir, scm, dvc):
 def test_date(tmp_dir, scm, dvc):
     tmp_dir.dvc_gen("testfile", "content", commit="add testfile")
 
-    now = datetime.datetime.now(tz=datetime.timezone.utc)
-    datestamp = (now.date() + datetime.timedelta(days=1)).isoformat()
+    now = dt.datetime.now(tz=dt.timezone.utc)
+    datestamp = (now.date() + dt.timedelta(days=1)).isoformat()
 
     tmp_dir.dvc_gen("testfile", "modified", commit="modified")
 
@@ -330,7 +330,7 @@ def test_date(tmp_dir, scm, dvc):
 
     tmp_dir.dvc_gen("testfile", "modified, again", commit="modify")
 
-    datestamp = (now.date() - datetime.timedelta(days=1)).isoformat()
+    datestamp = (now.date() - dt.timedelta(days=1)).isoformat()
     dvc.gc(commit_date=datestamp)
     assert _count_files(dvc.cache.local.path) == 2
     assert dvc.cache.local.exists("9ae73c65f418e6f79ceb4f0e4a4b98d5")

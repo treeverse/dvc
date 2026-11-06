@@ -132,7 +132,7 @@ class Repo:
         assert root_dir
         return root_dir, dvc_dir
 
-    def __init__(  # noqa: PLR0915, PLR0913
+    def __init__(  # noqa: PLR0913, PLR0915, PLR0917
         self,
         root_dir: Optional[str] = None,
         fs: Optional["FileSystem"] = None,
@@ -475,7 +475,7 @@ class Repo:
 
         return switch(self, rev)
 
-    def used_objs(  # noqa: PLR0913
+    def used_objs(  # noqa: PLR0913, PLR0917
         self,
         targets=None,
         all_branches=False,
