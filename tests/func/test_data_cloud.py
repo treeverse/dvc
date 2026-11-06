@@ -537,6 +537,36 @@ def test_push_pull_all(tmp_dir, scm, dvc, local_remote, key, expected):
     }
 
 
+def test_fetch_num(tmp_dir, scm, dvc, local_remote):
+    # Three commits, each tracking a distinct version (hash) of the same file.
+    tmp_dir.dvc_gen("foo", "first", commit="first")
+    tmp_dir.dvc_gen("foo", "second", commit="second")
+    tmp_dir.dvc_gen("foo", "third", commit="third")
+
+    assert dvc.push(all_commits=True) == 3
+
+    # `--num` on its own fetches the last `num` commits of the current branch:
+    # HEAD ("third") and HEAD~1 ("second"), but not HEAD~2 ("first").
+    clean(["foo"], dvc)
+    assert dvc.fetch(num=2) == 2
+
+    # default (`num=1`) only fetches the workspace revision ("third").
+    clean(["foo"], dvc)
+    assert dvc.fetch() == 1
+
+    # `--num` larger than history is capped at the available commits.
+    clean(["foo"], dvc)
+    assert dvc.fetch(num=10) == 3
+
+
+def test_fetch_num_invalid(tmp_dir, dvc, local_remote):
+    from dvc.exceptions import InvalidArgumentError
+
+    tmp_dir.dvc_gen({"foo": "foo"})
+    with pytest.raises(InvalidArgumentError):
+        dvc.fetch(num=0)
+
+
 def test_push_pull_fetch_pipeline_stages(tmp_dir, dvc, run_copy, local_remote):
     tmp_dir.dvc_gen("foo", "foo")
     run_copy("foo", "bar", name="copy-foo-bar")
