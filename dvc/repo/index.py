@@ -219,7 +219,7 @@ def _load_storage_from_import(storage_map, key, out):
         storage_map.add_remote(FileStorage(key, dep.fs, dep.fs_path, read_only=True))
 
 
-def _load_storage_from_out(storage_map, key, out):
+def _load_storage_from_out(storage_map, key, out, remotes=None):
     from dvc.cachemgr import LEGACY_HASH_NAMES
     from dvc.config import NoRemoteError
     from dvc_data.index import FileStorage, ObjectStorage
@@ -228,7 +228,14 @@ def _load_storage_from_out(storage_map, key, out):
         storage_map.add_cache(ObjectStorage(key, out.cache))
 
     try:
-        remote = out.repo.cloud.get_remote(out.remote)
+        # Reuse one Remote (and so one filesystem client) per remote name,
+        # instead of creating a new one for every output.
+        if remotes is not None and out.remote in remotes:
+            remote = remotes[out.remote]
+        else:
+            remote = out.repo.cloud.get_remote(out.remote)
+            if remotes is not None:
+                remotes[out.remote] = remote
         if remote.fs.version_aware:
             storage_map.add_remote(
                 FileStorage(
@@ -574,6 +581,7 @@ class Index:
         by_workspace["repo"] = index.view((*prefix, "repo"))
         by_workspace["local"] = index.view((*prefix, "local"))
 
+        remotes: dict[Optional[str], Any] = {}
         for out in self.outs:
             if not out.use_cache:
                 continue
@@ -586,7 +594,7 @@ class Index:
                 by_workspace[ws] = index.view((*prefix, ws))
 
             data_index = by_workspace[ws]
-            _load_storage_from_out(data_index.storage_map, key, out)
+            _load_storage_from_out(data_index.storage_map, key, out, remotes)
 
         return by_workspace
 
