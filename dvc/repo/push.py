@@ -61,7 +61,7 @@ def _update_meta(index, **kwargs):
 
 
 @locked
-def push(  # noqa: PLR0913
+def push(  # noqa: PLR0913, PLR0917
     self,
     targets=None,
     jobs=None,

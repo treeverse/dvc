@@ -307,7 +307,7 @@ class Output:
     IsStageFileError: type[DvcException] = OutputIsStageFileError
     IsIgnoredError: type[DvcException] = OutputIsIgnoredError
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         stage,
         path,

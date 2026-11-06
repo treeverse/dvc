@@ -228,8 +228,10 @@ def test_foreach_overwriting_item_in_list(tmp_dir, dvc, caplog, global_data, whe
         definition.resolve_all()
 
     assert caplog.messages == [
-        f"{where} already specified, "
-        "will be overwritten for stages generated from 'build'"
+        (
+            f"{where} already specified, "
+            "will be overwritten for stages generated from 'build'"
+        )
     ]
 
 

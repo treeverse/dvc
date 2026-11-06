@@ -44,7 +44,7 @@ def _log_unknown_exceptions() -> None:
     from dvc.ui import ui
     from dvc.utils import colorize
 
-    logger.exception("unexpected error")
+    logger.exception("unexpected error")  # noqa: LOG004
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Version info for developers:\n%s", get_dvc_info())
 
@@ -62,7 +62,7 @@ def _log_exceptions(exc: Exception) -> Optional[int]:
         import errno
 
         if exc.errno == errno.EMFILE:
-            logger.exception(
+            logger.exception(  # noqa: LOG004
                 (
                     "too many open files, please visit "
                     "%s to see how to handle this problem"
@@ -99,7 +99,7 @@ def _log_exceptions(exc: Exception) -> Optional[int]:
             link = format_link("https://github.com/treeverse/dvc/issues")
             hint = f"\nPlease report this bug to {link}. Thank you!"
 
-        logger.exception(
+        logger.exception(  # noqa: LOG004
             "URL '%s' is supported but requires these missing dependencies: %s. %s",
             exc.url,
             exc.missing_deps,
@@ -110,8 +110,8 @@ def _log_exceptions(exc: Exception) -> Optional[int]:
 
     if isinstance(exc, (AuthError, ConfigError)):
         link = format_link("https://man.dvc.org/remote/modify")
-        logger.exception("configuration error")
-        logger.exception(
+        logger.exception("configuration error")  # noqa: LOG004
+        logger.exception(  # noqa: LOG004
             "%s\nLearn more about configuration settings at %s.",
             exc,
             link,
@@ -125,7 +125,7 @@ def _log_exceptions(exc: Exception) -> Optional[int]:
         from dvc.utils import relpath
 
         directory = relpath(exc.directory)
-        logger.exception(
+        logger.exception(  # noqa: LOG004
             (
                 "Could not open pickled '%s' cache.\n"
                 "Remove the '%s' directory and then retry this command."
@@ -141,7 +141,7 @@ def _log_exceptions(exc: Exception) -> Optional[int]:
     from dvc_data.hashfile.build import IgnoreInCollectedDirError
 
     if isinstance(exc, IgnoreInCollectedDirError):
-        logger.exception("")
+        logger.exception("")  # noqa: LOG004
         return None
 
     _log_unknown_exceptions()
