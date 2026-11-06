@@ -94,6 +94,20 @@ def test_get_url_ignore_scm(tmp_dir, dvc, cloud, scm):
         api.get_url("foo", repo=repo_url, config={"core": {"no_scm": True}})
 
 
+def test_get_url_with_explicit_repo_from_subdir(tmp_dir, dvc, scm, cloud):
+    tmp_dir.add_remote(config=cloud.config)
+    tmp_dir.dvc_gen("foo", "foo", commit="add foo")
+    (tmp_dir / "subdir").mkdir()
+
+    expected_url = (
+        cloud / "files" / "md5" / "ac" / "bd18db4cc2f85cedef654fccc4a4d8"
+    ).url
+    with (tmp_dir / "subdir").chdir():
+        assert api.get_url("foo", repo=os.fspath(tmp_dir)) == expected_url
+        _, entry = dvc.get_data_index_entry("foo")
+        assert entry.hash_info.value == "acbd18db4cc2f85cedef654fccc4a4d8"
+
+
 def test_open_external(tmp_dir, erepo_dir, cloud):
     erepo_dir.add_remote(config=cloud.config)
 
@@ -262,6 +276,13 @@ def test_get_url_subrepos(tmp_dir, scm, local_cloud):
     )
     assert api.get_url(os.path.join("subrepo", "dir", "foo")) == expected_url
     assert api.get_url(os.path.join("subrepo", "dir", "foo"), repo=".") == expected_url
+    subdir = tmp_dir / "subdir"
+    subdir.mkdir()
+    with subdir.chdir():
+        assert (
+            api.get_url(os.path.join("subrepo", "dir", "foo"), repo=os.fspath(tmp_dir))
+            == expected_url
+        )
 
     expected_url = os.fspath(
         local_cloud / "files" / "md5" / "37" / "b51d194a7513e45b56f6524f2d51f2"
