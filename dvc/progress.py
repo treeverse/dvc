@@ -22,6 +22,9 @@ class Tqdm(tqdm):
     maximum-compatibility tqdm-based progressbars
     """
 
+    postfix: dict[str, str]
+    bar_format: str
+
     BAR_FMT_DEFAULT = (
         "{percentage:3.0f}% {desc}|{bar}|"
         "{postfix[info]}{n_fmt}/{total_fmt}"

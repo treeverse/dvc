@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        pyv: ["3.14"]
+        pyv: ["3.15"]
         plugin: ["dvc-s3"]
 
     steps:
@@ -34,7 +34,7 @@ jobs:
         path: ${{ matrix.plugin }}
 
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v7
       with:
         python-version: ${{ matrix.pyv }}
 

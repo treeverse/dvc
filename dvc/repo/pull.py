@@ -7,7 +7,7 @@ logger = logger.getChild(__name__)
 
 
 @locked
-def pull(  # noqa: PLR0913
+def pull(  # noqa: PLR0913, PLR0917
     self,
     targets=None,
     jobs=None,

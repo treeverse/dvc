@@ -289,7 +289,7 @@ class Console:
 
         return console.Console(stderr=True)
 
-    def table(  # noqa: PLR0913
+    def table(  # noqa: PLR0913, PLR0917
         self,
         data: "TableData",
         headers: Optional["Headers"] = None,

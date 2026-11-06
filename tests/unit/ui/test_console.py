@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 import textwrap
 
 import pytest
@@ -47,7 +47,7 @@ def test_write_json(capsys, mocker, isatty, expected_output):
 
     console = Console(enable=True)
     mocker.patch.object(console, "isatty", return_value=isatty)
-    message = {"hello": "world", "date": datetime.datetime(1970, 1, 1)}  # noqa: DTZ001
+    message = {"hello": "world", "date": dt.datetime(1970, 1, 1)}  # noqa: DTZ001
     console.write_json(message, default=str)
     captured = capsys.readouterr()
     assert captured.out == expected_output

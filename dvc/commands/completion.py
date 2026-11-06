@@ -17,7 +17,8 @@ class CmdCompletion(CmdBaseNoRepo):
 
         shell = self.args.shell
         parser = self.args.parser
-        script = shtab.complete(parser, shell=shell, preamble=get_preamble())
+        preamble = get_preamble().get(shell, "")
+        script = shtab.complete(parser, shell=shell, preamble=preamble)
         ui.write(script, force=True)
         return 0
 
