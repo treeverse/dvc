@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 10
     runs-on: ${{ matrix.os }}
     env:
-       DVC_NO_ANALYTICS: true
+      DVC_NO_ANALYTICS: true
     strategy:
       fail-fast: false
       matrix:
@@ -32,7 +32,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v7
       with:
-        python-version: '3.14'
+        python-version: '3.15'
     - uses: astral-sh/setup-uv@v7
       with:
         enable-cache: true
@@ -46,7 +46,7 @@ jobs:
       with:
         path: .mypy_cache
         key: mypy-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml') }}
-    - uses: pre-commit/action@v3.0.1
+    - uses: j178/prek-action@v3.1.0
 
   tests:
     timeout-minutes: 20
@@ -54,81 +54,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        pyv: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
-        include:
-        - os: windows-latest
-          pyv: "3.9"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 1"
-        - os: windows-latest
-          pyv: "3.9"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 2"
-        - os: windows-latest
-          pyv: "3.9"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 3"
-        - os: windows-latest
-          pyv: "3.9"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 4"
-        - os: windows-latest
-          pyv: "3.10"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 1"
-        - os: windows-latest
-          pyv: "3.10"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 2"
-        - os: windows-latest
-          pyv: "3.10"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 3"
-        - os: windows-latest
-          pyv: "3.10"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 4"
-        - os: windows-latest
-          pyv: "3.11"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 1"
-        - os: windows-latest
-          pyv: "3.11"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 2"
-        - os: windows-latest
-          pyv: "3.11"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 3"
-        - os: windows-latest
-          pyv: "3.11"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 4"
-        - os: windows-latest
-          pyv: "3.12"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 1"
-        - os: windows-latest
-          pyv: "3.12"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 2"
-        - os: windows-latest
-          pyv: "3.12"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 3"
-        - os: windows-latest
-          pyv: "3.12"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 4"
-        - os: windows-latest
-          pyv: "3.13"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 1"
-        - os: windows-latest
-          pyv: "3.13"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 2"
-        - os: windows-latest
-          pyv: "3.13"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 3"
-        - os: windows-latest
-          pyv: "3.13"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 4"
-        - os: windows-latest
-          pyv: "3.14"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 1"
-        - os: windows-latest
-          pyv: "3.14"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 2"
-        - os: windows-latest
-          pyv: "3.14"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 3"
-        - os: windows-latest
-          pyv: "3.14"
-          pytestargs: "--splitting-algorithm=least_duration --splits 4 --group 4"
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        pyv: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
+        group: [1, 2, 3, 4]  # test splits; only Windows is split
+        exclude:
+        - {os: ubuntu-latest, group: 2}
+        - {os: ubuntu-latest, group: 3}
+        - {os: ubuntu-latest, group: 4}
+        - {os: macos-latest, group: 2}
+        - {os: macos-latest, group: 3}
+        - {os: macos-latest, group: 4}
     steps:
     - uses: actions/checkout@v7
       with:
@@ -152,13 +87,14 @@ jobs:
         COVERAGE_CORE: sysmon
         PYTHONUTF8: 1
       run: >
-        pytest ${{ matrix.pytestargs }} -n=logical --dist=worksteal --timeout=300 --durations=0
+        pytest ${{ runner.os == 'Windows' && format('--splitting-algorithm=least_duration --splits 4 --group {0}', matrix.group) || '' }}
+        -n=logical --dist=worksteal --timeout=300 --durations=0
         --cov --cov-report=xml --cov-report=term  --durations-path=./.github/.test_durations
     - name: upload coverage report
       uses: codecov/codecov-action@v7
   check:
     if: always()
-    needs: [tests]
+    needs: [lint, tests]
     runs-on: ubuntu-latest
     steps:
       - uses: re-actors/alls-green@release/v1
@@ -166,7 +102,7 @@ jobs:
           jobs: ${{ toJSON(needs) }}
   notify:
     if: github.ref == 'refs/heads/main' && failure()
-    needs: [tests]
+    needs: [lint, tests]
     runs-on: ubuntu-latest
     steps:
     - name: Slack Notification
