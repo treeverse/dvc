@@ -203,3 +203,18 @@ def test_unhashable(tmp_dir, dvc, mocker, kwargs):
     with pytest.raises(RunCacheNotFoundError):
         cache.restore(stage)
     get_stage_hash.assert_not_called()
+
+
+def test_cache_hash_tracks_params_named_like_meta():
+    # https://github.com/treeverse/dvc/issues/10296
+    from dvc.stage.cache import _get_cache_hash
+
+    def lockfile(size):
+        return {
+            "cmd": "python script.py",
+            "deps": [{"path": "script.py", "hash": "md5", "md5": "abc", "size": 10}],
+            "params": {"params.yaml": {"size": size, "nfiles": 2}},
+            "outs": [{"path": "out", "hash": "md5", "md5": "def", "size": 3}],
+        }
+
+    assert _get_cache_hash(lockfile(30)) != _get_cache_hash(lockfile(40))

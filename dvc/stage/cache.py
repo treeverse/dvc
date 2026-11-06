@@ -8,7 +8,7 @@ from dvc import fs
 from dvc.config import RemoteConfigError
 from dvc.exceptions import CollectCacheError, DvcException
 from dvc.log import logger
-from dvc.utils import dict_sha256, relpath
+from dvc.utils import dict_filter, dict_sha256, relpath
 
 if TYPE_CHECKING:
     from dvc_objects.db import ObjectDB
@@ -30,7 +30,14 @@ def _get_cache_hash(cache, key=False):
 
     if key:
         cache["outs"] = [out["path"] for out in cache.get("outs", [])]
-    return dict_sha256(cache, exclude=[Meta.PARAM_SIZE, Meta.PARAM_NFILES])
+
+    # size/nfiles are file meta in deps/outs, but can also be param names
+    exclude = [Meta.PARAM_SIZE, Meta.PARAM_NFILES]
+    cache = {
+        k: dict_filter(v, exclude) if k in ("deps", "outs") else v
+        for k, v in cache.items()
+    }
+    return dict_sha256(cache)
 
 
 def _can_hash(stage):
