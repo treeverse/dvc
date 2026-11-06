@@ -96,6 +96,33 @@ def test_s3_ssl_verify(tmp_dir, dvc):
     )
 
 
+def test_s3_write_options(tmp_dir, dvc):
+    config = Config.from_cwd(validate=False)
+    with config.edit() as conf:
+        conf["remote"]["remote-name"] = {
+            "url": "s3://bucket/dvc",
+            "storage_class": "STANDARD_IA",
+            "requester_pays": "true",
+            "object_tags": "env=prod&team=ml",
+            "extra_s3_args": '{"ChecksumAlgorithm": "SHA256"}',
+        }
+
+    section = Config.from_cwd()["remote"]["remote-name"]
+    assert section["storage_class"] == "STANDARD_IA"
+    assert section["requester_pays"] is True
+    assert section["object_tags"] == "env=prod&team=ml"
+    assert section["extra_s3_args"] == '{"ChecksumAlgorithm": "SHA256"}'
+
+
+def test_s3_requester_pays_default(tmp_dir, dvc):
+    config = Config.from_cwd(validate=False)
+    with config.edit() as conf:
+        conf["remote"]["remote-name"] = {"url": "s3://bucket/dvc"}
+
+    section = Config.from_cwd()["remote"]["remote-name"]
+    assert section["requester_pays"] is False
+
+
 def test_load_unicode_error(tmp_dir, dvc, mocker):
     config = Config.from_cwd(validate=False)
     mocker.patch(
