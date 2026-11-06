@@ -62,12 +62,18 @@ class SerializableExp:
 
         params = _gather_params(repo, deps_only=param_deps, on_error="return")
         metrics = _gather_metrics(repo, on_error="return")
+
+        def _get_path(item) -> str:
+            if item.is_in_repo:
+                return relpath(item.fs_path, repo.root_dir)
+            return item.fs.unstrip_protocol(item.fs_path)
+
         return cls(
             rev=rev,
             params=params,
             metrics=metrics,
             deps={
-                relpath(dep.fs_path, repo.root_dir): ExpDep(
+                _get_path(dep): ExpDep(
                     hash=dep.hash_info.value if dep.hash_info else None,
                     size=dep.meta.size if dep.meta else None,
                     nfiles=dep.meta.nfiles if dep.meta else None,
@@ -79,7 +85,7 @@ class SerializableExp:
                 )
             },
             outs={
-                relpath(out.fs_path, repo.root_dir): ExpOut(
+                _get_path(out): ExpOut(
                     hash=out.hash_info.value if out.hash_info else None,
                     size=out.meta.size if out.meta else None,
                     nfiles=out.meta.nfiles if out.meta else None,
