@@ -17,7 +17,7 @@ from dvc.stage.cache import RunCacheNotSupported
 from dvc.stage.exceptions import StageFileDoesNotExistError, StageNotFound
 from dvc.testing import matchers as M
 from dvc.utils.fs import remove
-from dvc.utils.serialize import modify_yaml
+from dvc.utils.serialize import load_yaml, modify_yaml
 from dvc_data.hashfile.hash import file_md5
 
 
@@ -54,6 +54,21 @@ def test_repro_frozen(tmp_dir, dvc, run_copy):
     tmp_dir.gen("data", "bar")
     stages = dvc.reproduce()
     assert stages == [data_stage, stage0]
+
+
+def test_repro_frozen_force(tmp_dir, dvc, run_copy):
+    """Check that `--force` doesn't rewrite a frozen stage's dependency hashes"""
+    tmp_dir.dvc_gen("data", "foo")
+    run_copy("data", "stage0", name="copy-data-stage0")
+    run_copy("stage0", "stage1", name="copy-data-stage1")
+
+    dvc.freeze("copy-data-stage1")
+    frozen_before = load_yaml("dvc.lock")["stages"]["copy-data-stage1"]
+
+    tmp_dir.gen("stage0", "bar")
+
+    assert dvc.reproduce("copy-data-stage1", force=True) == []
+    assert load_yaml("dvc.lock")["stages"]["copy-data-stage1"] == frozen_before
 
 
 def test_downstream(tmp_dir, dvc):
