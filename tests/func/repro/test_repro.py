@@ -43,6 +43,29 @@ def test_repro_fail(tmp_dir, dvc, copy_script):
     assert main(["repro", stage.addressing]) != 0
 
 
+def test_repro_failure_keeps_successful_stage_gitignore(tmp_dir, dvc, scm):
+    (tmp_dir / PROJECT_FILE).dump(
+        {
+            "stages": {
+                "stage1": {
+                    "cmd": "mkdir -p output && echo ok > output/out1",
+                    "outs": ["output/out1"],
+                },
+                "stage2": {
+                    "cmd": "cp output/out1 output/out2 && exit 1",
+                    "deps": ["output/out1"],
+                    "outs": ["output/out2"],
+                },
+            }
+        }
+    )
+
+    with pytest.raises(ReproductionError):
+        dvc.reproduce()
+
+    assert (tmp_dir / "output" / ".gitignore").read_text().splitlines() == ["/out1"]
+
+
 def test_repro_frozen(tmp_dir, dvc, run_copy):
     (data_stage,) = tmp_dir.dvc_gen("data", "foo")
     stage0 = run_copy("data", "stage0", name="copy-data-stage0")

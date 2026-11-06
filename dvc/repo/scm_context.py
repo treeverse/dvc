@@ -95,6 +95,10 @@ class SCMContext:
             return self.track_file(relpath(gitignore_file))
         return None
 
+    def commit_ignored_paths(self) -> None:
+        """Keep ignore entries created by a completed operation."""
+        self.ignored_paths.clear()
+
     @contextmanager
     def __call__(
         self, autostage: Optional[bool] = None, quiet: Optional[bool] = None
