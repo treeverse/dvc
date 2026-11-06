@@ -574,6 +574,16 @@ def test_pull_partial(tmp_dir, dvc, local_remote):
     assert (tmp_dir / "foo").read_text() == {"bar": {"baz": "baz"}}
 
 
+def test_push_mixed_dvcfile_and_path_targets(tmp_dir, dvc, local_remote):
+    # https://github.com/treeverse/dvc/issues/11075
+    tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar"}})
+    tmp_dir.dvc_gen("file", "file")
+
+    # file, dir/foo and the .dir manifest, but not dir/bar
+    assert dvc.push(["file.dvc", os.path.join("dir", "foo")]) == 3
+    assert len(recurse_list_dir(local_remote.url)) == 3
+
+
 def test_output_remote(tmp_dir, dvc, make_remote):
     make_remote("default", default=True)
     make_remote("for_foo", default=False)

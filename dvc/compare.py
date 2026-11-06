@@ -341,7 +341,7 @@ def diff_table(
     return td
 
 
-def show_diff(  # noqa: PLR0913
+def show_diff(  # noqa: PLR0913, PLR0917
     diff,
     title: str,
     old: bool = True,

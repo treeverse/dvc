@@ -48,6 +48,11 @@ def test_relpath_windows():
         relpath("y:\\dir1\\dir2\\file.txt", "\\\\server\\share\\dir1")
         == "y:\\dir1\\dir2\\file.txt"
     )
+    assert (
+        relpath("\\\\server\\share\\file.txt", "\\\\server2\\share")
+        == "\\\\server\\share\\file.txt"
+    )
+    assert relpath("C:\\dir1\\file.txt", "c:\\dir2") == "..\\dir1\\file.txt"
 
 
 @pytest.mark.parametrize(

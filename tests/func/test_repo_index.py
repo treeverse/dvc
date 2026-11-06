@@ -431,3 +431,15 @@ def test_index_from_targets(tmp_dir, dvc):
 
     with pytest.raises(NoOutputOrStageError):
         index = index_from_targets(dvc, ["not-existing-stage"])
+
+
+def test_index_from_targets_dvcfile_and_path_in_dir(tmp_dir, dvc):
+    tmp_dir.dvc_gen({"dir": {"foo": "foo", "bar": "bar"}})
+    tmp_dir.dvc_gen("file", "file")
+
+    view = index_from_targets(dvc, ["file.dvc", os.path.join("dir", "foo")])
+
+    data_index = view.data["repo"]
+    assert ("file",) in data_index
+    assert ("dir", "foo") in data_index
+    assert ("dir", "bar") not in data_index

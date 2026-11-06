@@ -25,7 +25,7 @@ def _make_index_onerror(onerror, rev):
     return _onerror
 
 
-def _collect_indexes(  # noqa: PLR0913
+def _collect_indexes(  # noqa: PLR0913, PLR0917
     repo: "Repo",
     targets=None,
     remote=None,
@@ -98,7 +98,7 @@ def _collect_indexes(  # noqa: PLR0913
 
 
 @locked
-def fetch(  # noqa: PLR0913
+def fetch(  # noqa: PLR0913, PLR0917
     self: "Repo",
     targets=None,
     jobs=None,
