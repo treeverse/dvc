@@ -951,3 +951,112 @@ def test_checkout_loads_specific_file(tmp_dir, dvc, mocker):
     spy.assert_called_with(f)
     assert (tmp_dir / "foo").exists()
     assert not (tmp_dir / "bar").exists()
+
+
+def test_checkout_rejects_output_resolving_outside_via_symlink(
+    tmp_dir, dvc, scm, make_tmp_dir
+):
+    outside = make_tmp_dir("outside")
+    tmp_dir.gen("payload-outside", "DVC-EXTERNAL-WRITE")
+    (stage,) = tmp_dir.dvc_add("payload-outside")
+
+    descriptor = tmp_dir / stage.relpath
+    descriptor.write_text(
+        descriptor.read_text().replace(
+            "path: payload-outside", "path: outlink/payload.bin"
+        )
+    )
+    (tmp_dir / "payload-outside").unlink()
+    os.symlink(outside, tmp_dir / "outlink", target_is_directory=True)
+
+    with pytest.raises(CheckoutError, match="outside the repository"):
+        dvc.checkout(force=True)
+
+    assert not (outside / "payload.bin").exists()
+
+
+def test_checkout_rejects_output_resolving_into_git_hooks(tmp_dir, dvc, scm):
+    tmp_dir.gen("payload-hook", "#!/bin/sh\necho pwned\n")
+    (stage,) = tmp_dir.dvc_add("payload-hook")
+
+    descriptor = tmp_dir / stage.relpath
+    descriptor.write_text(
+        descriptor.read_text().replace("path: payload-hook", "path: hookdir/pre-commit")
+    )
+    (tmp_dir / "payload-hook").unlink()
+    os.symlink(
+        os.path.join(".git", "hooks"), tmp_dir / "hookdir", target_is_directory=True
+    )
+
+    with pytest.raises(CheckoutError, match=r"\.git directory"):
+        dvc.checkout(force=True)
+
+    assert not (tmp_dir / ".git" / "hooks" / "pre-commit").exists()
+
+
+def test_checkout_allows_output_under_internal_symlink(tmp_dir, dvc, scm):
+    (tmp_dir / "real" / "sub").mkdir(parents=True)
+    tmp_dir.gen("payload.bin", "DVC-INSIDE")
+    (stage,) = tmp_dir.dvc_add("payload.bin")
+
+    descriptor = tmp_dir / stage.relpath
+    descriptor.write_text(
+        descriptor.read_text().replace("path: payload.bin", "path: data/payload.bin")
+    )
+    (tmp_dir / "payload.bin").unlink()
+    os.symlink(os.path.join("real", "sub"), tmp_dir / "data", target_is_directory=True)
+
+    assert dvc.checkout(force=True) == empty_checkout | {
+        "added": ["data" + os.sep + "payload.bin"],
+        "stats": empty_stats | {"added": 1},
+    }
+    assert (tmp_dir / "data" / "payload.bin").read_text() == "DVC-INSIDE"
+
+
+def _plant_symlink_dir_entry(tmp_dir, dvc, entry, link_target):
+    """Replace a directory output with one whose tree has an entry below a symlink."""
+    from dvc_data.hashfile.tree import Tree
+
+    tmp_dir.gen({"data": {"real.txt": "REAL"}})
+    (stage,) = tmp_dir.dvc_add("data")
+    old_oid = stage.outs[0].hash_info.value
+    obj = stage.outs[0].get_obj()
+    meta, hash_info = next(iter(obj.iteritems()))[1]
+
+    tree = Tree()
+    tree.add(tuple(entry.split("/")), meta, hash_info)
+    tree.digest()
+    dvc.cache.local.add_bytes(tree.oid, tree.as_bytes())
+
+    descriptor = tmp_dir / stage.relpath
+    descriptor.write_text(descriptor.read_text().replace(old_oid, tree.oid))
+    (tmp_dir / "data" / "real.txt").unlink()
+    os.symlink(link_target, tmp_dir / "data" / "link", target_is_directory=True)
+
+
+def test_checkout_rejects_symlink_entry_inside_directory_output_writing_git(
+    tmp_dir, dvc, scm
+):
+    _plant_symlink_dir_entry(
+        tmp_dir,
+        dvc,
+        "link/hooks/pre-commit",
+        os.path.join("..", ".git"),
+    )
+
+    with pytest.raises(CheckoutError, match=r"\.git directory"):
+        dvc.checkout(force=True)
+
+    assert not (tmp_dir / ".git" / "hooks" / "pre-commit").exists()
+
+
+def test_checkout_rejects_symlink_entry_inside_directory_output_writing_outside(
+    tmp_dir, dvc, scm, make_tmp_dir
+):
+    outside = make_tmp_dir("outside")
+    _plant_symlink_dir_entry(tmp_dir, dvc, "link/evil.bin", outside)
+
+    with pytest.raises(CheckoutError, match="outside the repository"):
+        dvc.checkout(force=True)
+
+    assert not (outside / "evil.bin").exists()

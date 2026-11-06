@@ -79,6 +79,48 @@ def _build_out_changes(
     return out_changes
 
 
+class _CheckoutDestinationError(CheckoutError):
+    def __init__(self, msg: str):
+        self.result = {"stats": {"added": 0, "deleted": 0, "modified": 0}}
+        self.target_infos: list = []
+        DvcException.__init__(self, msg)
+
+
+def _validate_destination(out) -> None:
+    """Refuse to materialize outputs that resolve outside the workspace."""
+    if out.protocol != "local" or not out.use_cache or not out.is_in_repo:
+        return
+
+    from dvc.utils.fs import path_isin
+
+    root = os.path.realpath(out.repo.root_dir)
+    git_dir = os.path.realpath(os.path.join(root, ".git"))
+
+    def _check(path, key):
+        dest = os.path.realpath(path)
+        name = os.path.join(str(out), *key) if key else str(out)
+        if not path_isin(dest, root) and dest != root:
+            raise _CheckoutDestinationError(
+                f"output {name!r} resolves to {dest!r} which is outside the repository"
+            )
+        if path_isin(dest, git_dir) or dest == git_dir:
+            raise _CheckoutDestinationError(
+                f"output {name!r} resolves to {dest!r} "
+                "which is inside the repository's .git directory"
+            )
+
+    _check(out.fs_path, ())
+
+    if not out.hash_info or not out.is_dir_checksum:
+        return
+
+    obj = out.get_obj()
+    if obj is None:
+        return
+    for key, _ in obj.iteritems():
+        _check(out.fs.join(out.fs_path, *key), key)
+
+
 def _check_can_delete(
     entries: list["DataIndexEntry"],
     index: "BaseDataIndex",
@@ -161,6 +203,9 @@ def checkout(  # noqa: C901
 
     failed = set()
     out_paths = [out.fs_path for out in view.outs if out.use_cache and out.is_in_repo]
+
+    for out in view.outs:
+        _validate_destination(out)
 
     def checkout_onerror(src_path, dest_path, _exc):
         logger.debug(
