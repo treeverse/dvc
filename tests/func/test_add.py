@@ -893,6 +893,18 @@ def test_add_with_out(tmp_dir, scm, dvc):
     assert "/out_foo" in gitignore_content
 
 
+def test_add_with_out_cleans_up_staging(tmp_dir, dvc, mocker):
+    """Test that 'dvc add --out' cleans up the staging ODB after transfer."""
+    from dvc_objects.db import ObjectDB
+
+    tmp_dir.gen({"foo": "foo"})
+    clear_spy = mocker.spy(ObjectDB, "clear")
+    dvc.add("foo", out="out_foo")
+
+    assert (tmp_dir / "out_foo").read_text() == "foo"
+    assert clear_spy.call_count >= 1
+
+
 def test_add_to_cache_different_name(tmp_dir, dvc, local_cloud):
     local_cloud.gen({"data": {"foo": "foo", "bar": "bar"}})
 
