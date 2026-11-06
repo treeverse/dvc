@@ -23,3 +23,14 @@ def test_open_rev_raises_error_on_wrong_mode(tmp_dir, dvc):
     ):
         with api.open("foo", mode="w"):
             pass
+
+
+def test_api_read_from_subdir_with_repo_arg(tmp_dir, dvc):
+    """Ensure relative paths are resolved from repo root, not cwd."""
+
+    tmp_dir.dvc_gen({"data": {"data.xml": "contents"}})
+    subdir = tmp_dir / "src"
+    subdir.mkdir()
+
+    with subdir.chdir():
+        assert api.read("data/data.xml", repo=str(tmp_dir)) == "contents"
