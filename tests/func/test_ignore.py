@@ -257,6 +257,17 @@ def test_ignore_blank_line(tmp_dir, dvc):
     assert set(result) == {(tmp_dir / "dir" / "other").fs_path}
 
 
+@pytest.mark.parametrize("pattern", ["!", "! ", "\\"])
+def test_ignore_degenerate_pattern(tmp_dir, dvc, pattern):
+    # Git accepts a line that compiles to nothing without complaining, so one
+    # should not take every command down here either.
+    tmp_dir.gen({"dir": {"ignored": "text", "other": "text2"}})
+    tmp_dir.gen(DvcIgnore.DVCIGNORE_FILE, f"{pattern}\ndir/ignored")
+    dvc._reset()
+    result = dvc.dvcignore.find(dvc.fs, tmp_dir / "dir")
+    assert set(result) == {(tmp_dir / "dir" / "other").fs_path}
+
+
 # It is not possible to re-include a file if a parent directory of
 # that file is excluded.
 # Git doesn't list excluded directories for performance reasons,

@@ -63,7 +63,17 @@ class DvcIgnorePatterns(DvcIgnore):
 
         regex_pattern_list: list[tuple[str, bool, bool, PatternInfo]] = []
         for count, pattern_info in enumerate(pattern_infos):
-            regex, ignore = GitIgnoreSpecPattern.pattern_to_regex(pattern_info.patterns)
+            try:
+                regex, ignore = GitIgnoreSpecPattern.pattern_to_regex(
+                    pattern_info.patterns
+                )
+            except ValueError:
+                # A line that compiles to nothing is a no-op for git, which
+                # accepts it silently. pathspec returns (None, None) for most
+                # of them but raises for a few (e.g. a bare "!" or "\"), so
+                # drop those the same way instead of failing the command.
+                logger.warning("ignoring invalid pattern in %s", pattern_info)
+                continue
             if regex is not None and ignore is not None:
                 self.pattern_list.append(pattern_info)
                 regex = regex.replace(f"<{_DIR_MARK}>", f"<{_DIR_MARK}{count}>")
