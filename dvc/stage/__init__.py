@@ -1,8 +1,8 @@
 import os
 import string
 from collections import defaultdict
-from collections.abc import Iterable
-from contextlib import suppress
+from collections.abc import Iterable, Iterator
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
@@ -163,6 +163,9 @@ class Stage(params.StageParams):
         self.desc: Optional[str] = desc
         self.meta = meta
         self.raw_data = RawData()
+        # Builds of this stage's dependencies, reused while nothing can have
+        # changed them. None outside of `reproduce()`; see `reuse_dep_builds`.
+        self.dep_builds: Optional[dict[Any, Any]] = None
 
     @property
     def path(self) -> str:
@@ -416,8 +419,33 @@ class Stage(params.StageParams):
             out.checkout(force=force)
             out.ignore()
 
-    @rwlocked(read=["deps"], write=["outs"])
+    @contextmanager
+    def reuse_dep_builds(self) -> Iterator[None]:
+        """Build each workspace dependency at most once between changes.
+
+        Checking whether a stage changed, looking it up in the run cache and
+        saving it all hash the same dependencies, and a directory with many
+        files costs a full walk each time. Inside this block those builds are
+        reused until `forget_dep_builds()` is called, which happens whenever
+        the stage may have changed the workspace: after its command runs and
+        after outputs are restored from the run cache.
+        """
+        self.dep_builds = {}
+        try:
+            yield
+        finally:
+            self.dep_builds = None
+
+    def forget_dep_builds(self) -> None:
+        if self.dep_builds is not None:
+            self.dep_builds.clear()
+
     def reproduce(self, interactive=False, **kwargs) -> Optional["Stage"]:
+        with self.reuse_dep_builds():
+            return self._reproduce(interactive=interactive, **kwargs)
+
+    @rwlocked(read=["deps"], write=["outs"])
+    def _reproduce(self, interactive=False, **kwargs) -> Optional["Stage"]:
         force = kwargs.get("force", False)
         allow_missing = kwargs.get("allow_missing", False)
         pull = kwargs.get("pull", False)

@@ -116,3 +116,21 @@ def test_repro_pull_fails(tmp_dir, dvc, mocker, local_remote):
 
     # stage is run
     assert dvc.reproduce(pull=True)
+
+
+def test_repro_pulled_dependency_is_hashed_after_the_pull(tmp_dir, dvc, local_remote):
+    # The dependency is missing when the stage is first checked, so whatever
+    # was built for it then must not be reused once it has been pulled.
+    from dvc.dvcfile import LOCK_FILE
+
+    (foo,) = tmp_dir.dvc_gen({"foo": {"a": "a", "b": "b"}})
+    dvc.push()
+    dvc.stage.add(name="copy-foo", cmd="cp -r foo bar", deps=["foo"], outs=["bar"])
+    remove("foo")
+    remove(foo.outs[0].cache_path)
+
+    assert dvc.reproduce("copy-foo", pull=True, single_item=True)
+
+    (lock_dep,) = (tmp_dir / LOCK_FILE).parse()["stages"]["copy-foo"]["deps"]
+    assert lock_dep["md5"] == foo.outs[0].hash_info.value
+    assert lock_dep["nfiles"] == 2
