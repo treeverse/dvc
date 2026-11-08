@@ -15,6 +15,7 @@ from .refs import (
     EXEC_APPLY,
     EXEC_BASELINE,
     EXEC_BRANCH,
+    EXEC_HEAD,
     EXPS_NAMESPACE,
     ITER_SKIP_NAMESPACES,
     STASHES,
@@ -223,7 +224,10 @@ def fix_exp_head(scm: Union["Git", "NoSCM"], ref: Optional[str]) -> Optional[str
     if ref:
         name, tail = Git.split_ref_pattern(ref)
         if name == "HEAD" and scm.get_ref(EXEC_BASELINE):
-            return f"{EXEC_BASELINE}{tail}"
+            # Execution refs can survive an interrupted run after HEAD has moved.
+            head = scm.get_ref("HEAD", follow=False)
+            if head and head in (scm.get_ref(EXEC_HEAD), scm.get_ref(EXEC_BRANCH)):
+                return f"{EXEC_BASELINE}{tail}"
     return ref
 
 
