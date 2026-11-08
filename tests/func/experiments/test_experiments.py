@@ -2,6 +2,7 @@ import itertools
 import logging
 import os
 import stat
+import subprocess
 from textwrap import dedent
 
 import dulwich
@@ -504,16 +505,39 @@ def test_checkout_targets_deps(tmp_dir, scm, dvc, exp_stage):
 
 @pytest.mark.parametrize("tail", ["", "~1", "^"])
 def test_fix_exp_head(tmp_dir, scm, tail):
-    from dvc.repo.experiments.refs import EXEC_BASELINE
+    from dvc.repo.experiments.refs import EXEC_BASELINE, EXEC_BRANCH, EXEC_HEAD
     from dvc.repo.experiments.utils import fix_exp_head
 
     head = "HEAD" + tail
     assert head == fix_exp_head(scm, head)
 
-    rev = "1" * 40
+    tmp_dir.scm_gen("foo", "foo", commit="baseline")
+    rev = scm.get_rev()
+    tmp_dir.scm_gen("foo", "bar", commit="execution head")
+    exec_head = scm.get_rev()
     scm.set_ref(EXEC_BASELINE, rev)
-    assert EXEC_BASELINE + tail == fix_exp_head(scm, head)
-    assert "foo" + tail == fix_exp_head(scm, "foo" + tail)
+    scm.set_ref(EXEC_HEAD, exec_head)
+    assert head == fix_exp_head(scm, head)
+    with scm.detach_head():
+        assert EXEC_BASELINE + tail == fix_exp_head(scm, head)
+        assert "foo" + tail == fix_exp_head(scm, "foo" + tail)
+        tmp_dir.scm_gen("foo", "baz", commit="experiment result")
+        scm.set_ref(EXEC_BRANCH, scm.get_rev())
+        assert EXEC_BASELINE + tail == fix_exp_head(scm, head)
+
+
+@pytest.mark.parametrize("detached", [False, True])
+def test_list_after_interrupted_experiment(tmp_dir, scm, dvc, exp_stage, detached):
+    from dvc.repo.experiments.refs import EXEC_BASELINE
+
+    old_baseline = scm.get_rev()
+    dvc.experiments.run(exp_stage.addressing, params=["foo=2"], name="old")
+    scm.set_ref(EXEC_BASELINE, old_baseline)
+    subprocess.run(["git", "pack-refs", "--all"], check=True)
+    if detached:
+        scm.checkout(old_baseline)
+    tmp_dir.scm_gen("new", "new", commit="new baseline")
+    assert dvc.experiments.ls() == {}
 
 
 @pytest.mark.parametrize(
