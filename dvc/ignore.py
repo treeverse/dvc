@@ -194,15 +194,19 @@ class DvcIgnorePatterns(DvcIgnore):
     def _find_matching_pattern(
         self, path: str, is_dir: bool
     ) -> tuple[bool, list[PatternInfo]]:
-        paths = [path]
-        if is_dir and not path.endswith("/"):
-            paths.append(f"{path}/")
+        if is_dir:
+            path = path.rstrip("/")
 
         for pattern, ignore, dir_only_pattern, pattern_map in reversed(
             self.ignore_spec
         ):
             if dir_only_pattern and not is_dir:
                 continue
+            paths = [path]
+            if dir_only_pattern:
+                # `X/**` applies to X's contents, while a directory-only
+                # `X/` needs the trailing slash to match X itself.
+                paths.append(f"{path}/")
             for p in paths:
                 match = pattern.match(p)
                 if not match:
