@@ -1,3 +1,5 @@
+import argparse
+
 from dvc.cli import completion, formatter
 from dvc.cli.command import CmdBase
 from dvc.cli.utils import append_doc_link
@@ -29,10 +31,16 @@ class CmdRepro(CmdBase):
             "downstream": self.args.downstream,
             "recursive": self.args.recursive,
             "force_downstream": self.args.force_downstream,
-            "pull": self.args.pull,
+            "pull": self._pull,
             "allow_missing": self.args.allow_missing,
             "on_error": self.args.on_error,
         }
+
+    @property
+    def _pull(self):
+        if self.args.pull is not None:
+            return self.args.pull
+        return self.repo.config["core"].get("repro_pull", False)
 
     @property
     def _repro_kwargs(self):
@@ -43,7 +51,7 @@ class CmdRepro(CmdBase):
         }
 
 
-def add_arguments(repro_parser):
+def add_arguments(repro_parser, pull_default=False):
     repro_parser.add_argument(
         "targets",
         nargs="*",
@@ -115,8 +123,10 @@ and then the stage name name.
     )
     repro_parser.add_argument(
         "--pull",
-        action="store_true",
-        default=False,
+        action=(
+            argparse.BooleanOptionalAction if pull_default is None else "store_true"
+        ),
+        default=pull_default,
         help="Try automatically pulling missing data.",
     )
     repro_parser.add_argument(
@@ -165,7 +175,7 @@ def add_parser(subparsers, parent_parser):
         formatter_class=formatter.RawDescriptionHelpFormatter,
     )
     # repro/exp run shared args
-    add_arguments(repro_parser)
+    add_arguments(repro_parser, pull_default=None)
     # repro only args
     repro_parser.add_argument(
         "--glob",

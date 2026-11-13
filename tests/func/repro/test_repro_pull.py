@@ -2,6 +2,10 @@ import os
 
 import pytest
 
+from dvc.cli import parse_args
+from dvc.commands.repro import CmdRepro
+from dvc.config import ConfigError
+from dvc.exceptions import ReproductionError
 from dvc.stage.cache import RunCacheNotSupported
 from dvc.utils.fs import remove
 
@@ -16,6 +20,50 @@ def test_repro_pulls_missing_data_source(tmp_dir, dvc, mocker, local_remote):
     remove(foo.outs[0].cache_path)
 
     assert dvc.reproduce(pull=True)
+
+
+@pytest.mark.parametrize(
+    "configured_pull, args, should_pull",
+    [
+        (None, [], False),
+        (False, [], False),
+        (True, [], True),
+        (False, ["--pull"], True),
+        (True, ["--pull"], True),
+        (True, ["--no-pull"], False),
+    ],
+)
+def test_repro_pull_config(
+    tmp_dir, dvc, local_remote, mocker, configured_pull, args, should_pull
+):
+    (foo,) = tmp_dir.dvc_gen("foo", "foo")
+    dvc.push()
+    dvc.stage.add(name="copy-foo", cmd="cp foo bar", deps=["foo"], outs=["bar"])
+    remove("foo")
+    remove(foo.outs[0].cache_path)
+
+    if configured_pull is not None:
+        with dvc.config.edit() as config:
+            config["core"]["repro_pull"] = configured_pull
+
+    cmd = CmdRepro(parse_args(["repro", *args]))
+    run_cache_pull = mocker.spy(cmd.repo.stage_cache, "pull")
+    if should_pull:
+        assert cmd.run() == 0
+        assert (tmp_dir / "foo").exists()
+        assert (tmp_dir / "bar").exists()
+        assert run_cache_pull.called
+    else:
+        with pytest.raises(ReproductionError):
+            cmd.run()
+        assert not (tmp_dir / "foo").exists()
+        assert not run_cache_pull.called
+
+
+def test_repro_pull_config_validation(dvc):
+    with pytest.raises(ConfigError, match="expected true or false"):
+        with dvc.config.edit() as config:
+            config["core"]["repro_pull"] = "invalid"
 
 
 def test_repro_pulls_missing_import(tmp_dir, dvc, mocker, erepo_dir, local_remote):
