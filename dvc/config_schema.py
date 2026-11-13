@@ -286,6 +286,7 @@ SCHEMA = {
         "remote": Lower,
         "checksum_jobs": All(Coerce(int), Range(1)),
         Optional("interactive", default=False): Bool,
+        Optional("repro_pull", default=False): Bool,
         Optional("analytics", default=True): Bool,
         Optional("hardlink_lock", default=False): Bool,
         Optional("no_scm", default=False): Bool,
