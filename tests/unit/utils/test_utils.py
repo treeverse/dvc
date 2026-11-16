@@ -3,7 +3,14 @@ import re
 
 import pytest
 
-from dvc.utils import dict_sha256, fix_env, parse_target, relpath, resolve_output
+from dvc.utils import (
+    dict_sha256,
+    env2bool,
+    fix_env,
+    parse_target,
+    relpath,
+    resolve_output,
+)
 
 
 @pytest.mark.skipif(os.name == "nt", reason="pyenv-win is not supported")
@@ -153,3 +160,35 @@ def test_hint_on_lockfile():
 )
 def test_dict_sha256(d, sha):
     assert dict_sha256(d) == sha
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ("1", True),
+        ("y", True),
+        ("yes", True),
+        ("true", True),
+        ("TRUE", True),
+        (" true ", True),
+        ("0", False),
+        ("no", False),
+        ("false", False),
+        ("off", False),
+        ("", False),
+        ("my_path", False),
+        ("anything", False),
+        ("only", False),
+        ("deny", False),
+        ("v1.0", False),
+    ],
+)
+def test_env2bool_matches_the_whole_value(monkeypatch, value, expected):
+    monkeypatch.setenv("DVC_ENV2BOOL_TEST", value)
+    assert env2bool("DVC_ENV2BOOL_TEST") is expected
+
+
+def test_env2bool_returns_undefined_when_unset(monkeypatch):
+    monkeypatch.delenv("DVC_ENV2BOOL_TEST", raising=False)
+    assert env2bool("DVC_ENV2BOOL_TEST") is False
+    assert env2bool("DVC_ENV2BOOL_TEST", "fallback") == "fallback"
