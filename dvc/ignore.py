@@ -7,11 +7,13 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Optional, Union, ove
 
 try:
     from pathspec.patterns.gitignore.spec import (  # type: ignore[import-not-found]
+        GitIgnorePatternError,
         GitIgnoreSpecPattern,
     )
 except ImportError:  # pathspec<1
     from pathspec.patterns import (
         GitWildMatchPattern as GitIgnoreSpecPattern,
+        GitWildMatchPatternError as GitIgnorePatternError,
     )
 
 from pathspec.util import normalize_file
@@ -63,7 +65,12 @@ class DvcIgnorePatterns(DvcIgnore):
 
         regex_pattern_list: list[tuple[str, bool, bool, PatternInfo]] = []
         for count, pattern_info in enumerate(pattern_infos):
-            regex, ignore = GitIgnoreSpecPattern.pattern_to_regex(pattern_info.patterns)
+            try:
+                regex, ignore = GitIgnoreSpecPattern.pattern_to_regex(
+                    pattern_info.patterns
+                )
+            except GitIgnorePatternError:
+                continue
             if regex is not None and ignore is not None:
                 self.pattern_list.append(pattern_info)
                 regex = regex.replace(f"<{_DIR_MARK}>", f"<{_DIR_MARK}{count}>")

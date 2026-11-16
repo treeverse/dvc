@@ -6,6 +6,15 @@ import pytest
 from dvc.ignore import DvcIgnorePatterns
 
 
+@pytest.mark.parametrize("pattern", ["!", "! ", "\\"])
+def test_patterns_that_normalize_to_nothing_are_ignored(tmp_dir, pattern):
+    patterns = DvcIgnorePatterns(
+        [pattern, "ignored"], os.fspath(tmp_dir), os.path.sep
+    )
+    assert patterns.matches(os.fspath(tmp_dir), "ignored")
+    assert not patterns.matches(os.fspath(tmp_dir), "other")
+
+
 @pytest.mark.parametrize(
     "file_to_ignore_relpath, patterns,  expected_match",
     [
