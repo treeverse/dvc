@@ -11,9 +11,7 @@ from dvc.ignore import DvcIgnorePatterns
 def test_patterns_that_normalize_to_nothing_are_ignored(tmp_dir, pattern):
     path = tmp_dir / ".dvcignore"
     path.write_text(f"{pattern}\nignored\n")
-    patterns = DvcIgnorePatterns.from_file(
-        os.fspath(path), localfs, ".dvcignore"
-    )
+    patterns = DvcIgnorePatterns.from_file(os.fspath(path), localfs, ".dvcignore")
     assert patterns.matches(os.fspath(tmp_dir), "ignored")
     assert not patterns.matches(os.fspath(tmp_dir), "other")
 
