@@ -241,12 +241,15 @@ def as_posix(path: str) -> str:
 
 def env2bool(var, undefined=False):
     """
+    Return whether an environment variable is one of 1, y, yes or true
+    (case-insensitive, with surrounding whitespace ignored).
+
     undefined: return value if env var is unset
     """
     var = os.getenv(var, None)
     if var is None:
         return undefined
-    return bool(re.search("1|y|yes|true", var, flags=re.IGNORECASE))
+    return var.strip().lower() in {"1", "y", "yes", "true"}
 
 
 def resolve_output(inp: str, out: Optional[str], force=False) -> str:
