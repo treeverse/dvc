@@ -13,6 +13,8 @@ try:
 except ImportError:  # pathspec<1
     from pathspec.patterns import (
         GitWildMatchPattern as GitIgnoreSpecPattern,
+    )
+    from pathspec.patterns import (
         GitWildMatchPatternError as GitIgnorePatternError,
     )
 
