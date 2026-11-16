@@ -11,10 +11,8 @@ try:
         GitIgnoreSpecPattern,
     )
 except ImportError:  # pathspec<1
-    from pathspec.patterns import (
+    from pathspec.patterns.gitwildmatch import (  # type: ignore[import-not-found,no-redef]
         GitWildMatchPattern as GitIgnoreSpecPattern,
-    )
-    from pathspec.patterns import (
         GitWildMatchPatternError as GitIgnorePatternError,
     )
 
