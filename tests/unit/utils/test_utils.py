@@ -3,7 +3,48 @@ import re
 
 import pytest
 
-from dvc.utils import dict_sha256, fix_env, parse_target, relpath, resolve_output
+from dvc.utils import (
+    dict_sha256,
+    env2bool,
+    fix_env,
+    parse_target,
+    relpath,
+    resolve_output,
+)
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("1", True),
+        ("y", True),
+        ("yes", True),
+        ("true", True),
+        ("TRUE", True),
+        ("Yes", True),
+        ("0", False),
+        ("no", False),
+        ("false", False),
+        ("off", False),
+        ("", False),
+        # only the exact truthy values count, not values containing them
+        ("my_path", False),
+        ("anything", False),
+        ("only", False),
+        ("v1.0", False),
+        ("yep", False),
+        ("yesplease", False),
+    ],
+)
+def test_env2bool(monkeypatch, value, expected):
+    monkeypatch.setenv("DVC_TEST_ENV2BOOL", value)
+    assert env2bool("DVC_TEST_ENV2BOOL") is expected
+
+
+def test_env2bool_undefined(monkeypatch):
+    monkeypatch.delenv("DVC_TEST_ENV2BOOL", raising=False)
+    assert env2bool("DVC_TEST_ENV2BOOL") is False
+    assert env2bool("DVC_TEST_ENV2BOOL", True) is True
 
 
 @pytest.mark.skipif(os.name == "nt", reason="pyenv-win is not supported")
