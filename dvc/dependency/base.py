@@ -1,6 +1,10 @@
+from typing import Optional
+
 from dvc.exceptions import DvcException
 from dvc.fs import download as fs_download
+from dvc.ignore import DvcIgnoreFilter
 from dvc.output import Output
+from dvc_objects.fs.scheme import Schemes
 
 
 class DependencyDoesNotExistError(DvcException):
@@ -26,6 +30,26 @@ class Dependency(Output):
     DoesNotExistError: type[DvcException] = DependencyDoesNotExistError
     IsNotFileOrDirError: type[DvcException] = DependencyIsNotFileOrDirError
     IsStageFileError: type[DvcException] = DependencyIsStageFileError
+
+    @property
+    def dvcignore(self) -> Optional[DvcIgnoreFilter]:
+        """
+        For dependencies we override the dvcignore to be part of
+        SCM root as well. Outputs cannot be saved outside the DVC repo.
+        However, you can have dependency for subdir DVC repos.
+
+        Returns:
+            Optional[DvcIgnoreFilter]: DVC repo root or SCM root dvcignore.
+        """
+        if self.fs.protocol != Schemes.LOCAL:
+            return None
+
+        assert self.repo
+        if self.fs.isin_or_eq(self.fs_path, self.repo.root_dir):
+            return self.repo.dvcignore
+        if self.fs.isin_or_eq(self.fs_path, self.repo.scm.root_dir):
+            return self.repo.scm_dvcignore
+        return None
 
     def workspace_status(self) -> dict[str, str]:
         if self.fs.version_aware:

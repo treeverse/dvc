@@ -34,9 +34,11 @@ from dvc_data.hashfile.meta import Meta
 from dvc_data.hashfile.transfer import transfer as otransfer
 from dvc_data.hashfile.tree import Tree, du
 from dvc_objects.errors import ObjectFormatError
+from dvc_objects.fs.local import LocalFileSystem
+from dvc_objects.fs.scheme import Schemes
 
 from .annotations import ANNOTATION_FIELDS, ANNOTATION_SCHEMA, Annotation
-from .fs import LocalFileSystem, RemoteMissingDepsError, Schemes, get_cloud_fs
+from .fs import RemoteMissingDepsError, get_cloud_fs
 from .fs.callbacks import DEFAULT_CALLBACK, Callback, TqdmCallback
 from .utils import relpath
 from .utils.fs import path_isin
@@ -351,7 +353,7 @@ class Output:
         self.fs = fs_cls(**fs_config)
 
         if (
-            self.fs.protocol == "local"
+            self.fs.protocol == Schemes.LOCAL
             and stage
             and isinstance(stage.repo.fs, LocalFileSystem)
             and path_isin(path, stage.repo.root_dir)
@@ -363,7 +365,7 @@ class Output:
 
         if (
             self.repo
-            and self.fs.protocol == "local"
+            and self.fs.protocol == Schemes.LOCAL
             and not self.fs.isabs(self.def_path)
         ):
             self.fs = self.repo.fs
@@ -461,7 +463,7 @@ class Output:
         return f"{type(self).__name__}: {self.def_path!r}"
 
     def __str__(self):
-        if self.fs.protocol != "local":
+        if self.fs.protocol != Schemes.LOCAL:
             return self.def_path
 
         if (
@@ -643,7 +645,7 @@ class Output:
 
     @property
     def dvcignore(self) -> Optional["DvcIgnoreFilter"]:
-        if self.fs.protocol == "local":
+        if self.fs.protocol == Schemes.LOCAL:
             assert self.repo
             return self.repo.dvcignore
         return None
@@ -891,7 +893,7 @@ class Output:
         return ret
 
     def verify_metric(self):
-        if self.fs.protocol != "local":
+        if self.fs.protocol != Schemes.LOCAL:
             raise DvcException(f"verify metric is not supported for {self.protocol}")
         if not self.metric:
             return
@@ -1003,7 +1005,7 @@ class Output:
         else:
             logger.warning("%r missing", self.fspath)
 
-        if self.protocol == "local" and self.use_scm_ignore:
+        if self.protocol == Schemes.LOCAL and self.use_scm_ignore:
             assert self.repo
             self.repo.scm_context.ignore_remove(self.fspath)
 
