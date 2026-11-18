@@ -32,6 +32,18 @@ def test_get_url_requires_dvc(tmp_dir, scm):
         api.get_url("foo", repo=f"file://{tmp_dir.as_posix()}")
 
 
+def test_get_url_from_subdir(tmp_dir, dvc, local_remote):
+    # `path` is documented as relative to the repo root, so the result must not
+    # depend on the current working directory (see #11029).
+    tmp_dir.dvc_gen("foo", "foo")
+    subdir = tmp_dir / "subdir"
+    subdir.mkdir()
+
+    expected = api.get_url("foo", repo=os.fspath(tmp_dir))
+    with subdir.chdir():
+        assert api.get_url("foo", repo=os.fspath(tmp_dir)) == expected
+
+
 def test_get_url_from_remote(tmp_dir, erepo_dir, cloud, local_cloud):
     erepo_dir.add_remote(config=cloud.config, name="other")
     erepo_dir.add_remote(config=local_cloud.config, default=True)
