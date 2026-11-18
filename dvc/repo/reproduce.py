@@ -199,6 +199,9 @@ def _reproduce(
 
         if ret:
             result.append(ret)
+            # Keep ignore entries from successful stages when a later stage
+            # fails and the surrounding reproduction context is unwound.
+            stage.repo.scm_context.commit_ignored_paths()
 
     if on_error != "ignore" and failed:
         _raise_error(None, *failed)
