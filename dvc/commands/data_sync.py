@@ -93,6 +93,7 @@ class CmdDataFetch(CmdDataBase):
                 all_branches=self.args.all_branches,
                 all_tags=self.args.all_tags,
                 all_commits=self.args.all_commits,
+                num=self.args.num,
                 with_deps=self.args.with_deps,
                 recursive=self.args.recursive,
                 run_cache=self.args.run_cache,
@@ -135,7 +136,7 @@ def shared_parent_parser():
     return parent_parser
 
 
-def add_parser(subparsers, _parent_parser):
+def add_parser(subparsers, _parent_parser):  # noqa: PLR0915
     from dvc.commands.status import CmdDataStatus
 
     # Pull
@@ -308,6 +309,18 @@ def add_parser(subparsers, _parent_parser):
         action="store_true",
         default=False,
         help="Fetch cache for all commits.",
+    )
+    fetch_parser.add_argument(
+        "--num",
+        type=int,
+        default=1,
+        dest="num",
+        metavar="<number>",
+        help=(
+            "Fetch cache for the last `num` commits. Defaults to the current "
+            "branch when used on its own, or applies to each branch with "
+            "`--all-branches`."
+        ),
     )
     fetch_parser.add_argument(
         "-d",
