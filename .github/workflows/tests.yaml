@@ -46,7 +46,7 @@ jobs:
       with:
         path: .mypy_cache
         key: mypy-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml') }}
-    - uses: j178/prek-action@v3.1.0
+    - uses: j178/prek-action@v3.1.1
 
   tests:
     timeout-minutes: 20
