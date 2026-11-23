@@ -183,3 +183,27 @@ def test_local_overwrite_error(tmp_dir, dvc, vars_, loc):
         f"cannot redefine 'models.bar' from '{loc}' "
         "as it already exists in 'params.yaml'"
     )
+
+
+@pytest.mark.parametrize(
+    "params, vars_, key",
+    [
+        ({"layers": [1, 2]}, {"layers": [3]}, "layers"),
+        ({"models": {"layers": [1, 2]}}, {"models": {"layers": [3]}}, "models.layers"),
+        ({"models": {"foo": 1}}, {"models": 5}, "models"),
+    ],
+)
+def test_local_overwrite_error_on_container(tmp_dir, dvc, params, vars_, key):
+    (tmp_dir / DEFAULT_PARAMS_FILE).dump(params)
+
+    d = {"stages": {"build": {"cmd": "echo hi", "vars": [vars_]}}}
+
+    resolver = DataResolver(dvc, tmp_dir.fs_path, d)
+    with pytest.raises(ResolveError) as exc_info:
+        resolver.resolve()
+
+    assert (
+        str(exc_info.value) == "failed to parse stage 'build' in 'dvc.yaml':\n"
+        f"cannot redefine '{key}' from 'build.vars[0]' "
+        "as it already exists in 'params.yaml'"
+    )

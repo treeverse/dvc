@@ -11,6 +11,7 @@ from dvc.parsing.context import (
     CtxList,
     KeyNotInContext,
     MergeError,
+    Meta,
     ParamsLoadError,
     Value,
     recurse_not_a_node,
@@ -279,6 +280,23 @@ def test_clone():
     assert c2.select("lst.0") == Value(1)
     with pytest.raises(KeyNotInContext):
         c2.select("lst.1.not_existing_key")
+
+
+def test_clone_preserves_nested_meta():
+    c1 = Context(
+        {"lst": [1, 2], "dct": {"nested": [3]}},
+        meta=Meta(source="params.yaml", local=False),
+    )
+    c2 = Context.clone(c1)
+
+    assert c2["lst"].meta == c1["lst"].meta
+    assert c2["dct"].meta == c1["dct"].meta
+    assert c2["dct"]["nested"].meta == c1["dct"]["nested"].meta
+
+    with c2.track() as tracked:
+        c2.select("lst")
+        c2.select("dct.nested")
+    assert tracked == {"params.yaml": {"lst": [1, 2], "dct.nested": [3]}}
 
 
 def test_track(tmp_dir):
