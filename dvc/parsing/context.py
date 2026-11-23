@@ -249,7 +249,7 @@ class CtxList(Container, MutableSequence):
 
     def __deepcopy__(self, _):
         # optimization: we don't support overriding a list
-        new = CtxList([])
+        new = CtxList([], meta=deepcopy(self.meta))
         new.data = self.data[:]  # Short-circuiting __setitem__
         return new
 
@@ -283,7 +283,7 @@ class CtxDict(Container, MutableMapping):
         return {key: node.value for key, node in self.items()}
 
     def __deepcopy__(self, _):
-        new = CtxDict()
+        new = CtxDict(meta=deepcopy(self.meta))
         for k, v in self.items():
             new.data[k] = (
                 deepcopy(v) if isinstance(v, Container) else v
