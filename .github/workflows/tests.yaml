@@ -64,6 +64,10 @@ jobs:
         - {os: macos-latest, group: 2}
         - {os: macos-latest, group: 3}
         - {os: macos-latest, group: 4}
+        # Python 3.9 is not available on the Ubuntu 26.04 image behind ubuntu-latest
+        - {os: ubuntu-latest, pyv: "3.9"}
+        include:
+        - {os: ubuntu-24.04, pyv: "3.9", group: 1}
     steps:
     - uses: actions/checkout@v7
       with:
