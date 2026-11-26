@@ -202,29 +202,33 @@ class DvcIgnorePatterns(DvcIgnore):
         ):
             if dir_only_pattern and not is_dir:
                 continue
-            paths = [path]
-            if dir_only_pattern:
-                # `X/**` applies to X's contents, while a directory-only
-                # `X/` needs the trailing slash to match X itself.
-                paths.append(f"{path}/")
-            for p in paths:
-                match = pattern.match(p)
-                if not match:
+            # `X/**` begins below X, while an explicit `X/` matches X itself.
+            candidate = f"{path}/" if dir_only_pattern else path
+            match = pattern.match(candidate)
+            if not match:
+                continue
+            groups = match.groupdict()
+            if ignore:
+                group_name = next(
+                    name
+                    for name, value in groups.items()
+                    if name.startswith("rule_") and value is not None
+                )
+            else:
+                # Unignored patterns are not combined with `|`.
+                group_name = None
+            _regex, pattern_info = pattern_map[group_name]
+            if not ignore and not pattern_info.patterns.endswith("/**"):
+                # A directory match can reopen traversal at an ancestor. It
+                # does not re-include descendants still matched by an exclude.
+                if any(
+                    name.startswith("ps_d")
+                    and value
+                    and match.end(name) < len(candidate)
+                    for name, value in groups.items()
+                ):
                     continue
-                if ignore:
-                    group_name, _match = next(
-                        (
-                            (name, _match)
-                            for name, _match in match.groupdict().items()
-                            if name.startswith("rule_") and _match is not None
-                        )
-                    )
-                else:
-                    # unignored patterns are not combined with `|`,
-                    # so there are no groups.
-                    group_name = None
-                _regex, pattern_info = pattern_map[group_name]
-                return ignore, [pattern_info]
+            return ignore, [pattern_info]
         return False, []
 
     def _ignore(self, path: str, is_dir: bool) -> tuple[bool, list[PatternInfo]]:

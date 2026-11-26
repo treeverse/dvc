@@ -218,6 +218,20 @@ def test_reinclude_below_parent_pattern(parent_pattern, expected):
     assert match(join("volumes", "functions", ""), is_dir=True) == expected_parent
 
 
+def test_reinclude_directory_does_not_reinclude_its_descendants():
+    ignore = DvcIgnorePatterns(
+        ["x/**", "!x/sample*", "!x/main/", "!x/main/index.ts"], os.sep, os.sep
+    )
+
+    assert not ignore.matches(os.sep, join("x", "sample-dir"), True)
+    assert ignore.matches(os.sep, join("x", "sample-dir", "nested"), True)
+    assert ignore.matches(os.sep, join("x", "sample-dir", "data.py"))
+    assert ignore.matches(os.sep, join("x", "sample-dir", "nested", "data.py"))
+    assert not ignore.matches(os.sep, join("x", "main"), True)
+    assert not ignore.matches(os.sep, join("x", "main", "index.ts"))
+    assert ignore.matches(os.sep, join("x", "main", "other.ts"))
+
+
 @pytest.mark.parametrize(
     "pattern, directory",
     [
