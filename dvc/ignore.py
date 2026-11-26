@@ -208,21 +208,10 @@ class DvcIgnorePatterns(DvcIgnore):
             match = pattern.match(candidate)
             if not match:
                 continue
-            groups = match.groupdict()
-            if ignore:
-                group_name = next(
-                    name
-                    for name, value in groups.items()
-                    if name.startswith("rule_") and value is not None
-                )
-            else:
-                # Unignored patterns are not combined with `|`.
-                group_name = None
+            group_name = match.lastgroup if ignore else None
             _regex, pattern_info = pattern_map[group_name]
-            if inherited_negation is not None and ignore:
-                if pattern_info.patterns.endswith("/**"):
-                    return True, [pattern_info]
-                return False, [inherited_negation]
+            if ignore and pattern_info.patterns.endswith("/**"):
+                return True, [pattern_info]
             # Reopening an ancestor does not override a recursive exclude
             # directly matching the descendant. Preserve other negation rules.
             if (
@@ -232,11 +221,10 @@ class DvcIgnorePatterns(DvcIgnore):
                     name.startswith("ps_d")
                     and value
                     and match.end(name) < len(candidate)
-                    for name, value in groups.items()
+                    for name, value in match.groupdict().items()
                 )
             ):
-                if inherited_negation is None:
-                    inherited_negation = pattern_info
+                inherited_negation = inherited_negation or pattern_info
                 continue
             if inherited_negation is not None:
                 return False, [inherited_negation]
