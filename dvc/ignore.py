@@ -194,33 +194,43 @@ class DvcIgnorePatterns(DvcIgnore):
     def _find_matching_pattern(
         self, path: str, is_dir: bool
     ) -> tuple[bool, list[PatternInfo]]:
-        paths = [path]
-        if is_dir and not path.endswith("/"):
-            paths.append(f"{path}/")
+        if is_dir:
+            path = path.rstrip("/")
 
+        inherited_negation: Optional[PatternInfo] = None
         for pattern, ignore, dir_only_pattern, pattern_map in reversed(
             self.ignore_spec
         ):
             if dir_only_pattern and not is_dir:
                 continue
-            for p in paths:
-                match = pattern.match(p)
-                if not match:
-                    continue
-                if ignore:
-                    group_name, _match = next(
-                        (
-                            (name, _match)
-                            for name, _match in match.groupdict().items()
-                            if name.startswith("rule_") and _match is not None
-                        )
-                    )
-                else:
-                    # unignored patterns are not combined with `|`,
-                    # so there are no groups.
-                    group_name = None
-                _regex, pattern_info = pattern_map[group_name]
-                return ignore, [pattern_info]
+            # `X/**` begins below X, while an explicit `X/` matches X itself.
+            candidate = f"{path}/" if dir_only_pattern else path
+            match = pattern.match(candidate)
+            if not match:
+                continue
+            group_name = match.lastgroup if ignore else None
+            _regex, pattern_info = pattern_map[group_name]
+            if ignore and pattern_info.patterns.endswith("/**"):
+                return True, [pattern_info]
+            # Reopening an ancestor does not override a recursive exclude
+            # directly matching the descendant. Preserve other negation rules.
+            if (
+                not ignore
+                and not pattern_info.patterns.rstrip("/").endswith("/**")
+                and any(
+                    name.startswith("ps_d")
+                    and value
+                    and match.end(name) < len(candidate)
+                    for name, value in match.groupdict().items()
+                )
+            ):
+                inherited_negation = inherited_negation or pattern_info
+                continue
+            if inherited_negation is not None:
+                return False, [inherited_negation]
+            return ignore, [pattern_info]
+        if inherited_negation is not None:
+            return False, [inherited_negation]
         return False, []
 
     def _ignore(self, path: str, is_dir: bool) -> tuple[bool, list[PatternInfo]]:
