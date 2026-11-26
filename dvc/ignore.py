@@ -197,6 +197,7 @@ class DvcIgnorePatterns(DvcIgnore):
         if is_dir:
             path = path.rstrip("/")
 
+        inherited_negation: Optional[PatternInfo] = None
         for pattern, ignore, dir_only_pattern, pattern_map in reversed(
             self.ignore_spec
         ):
@@ -218,17 +219,28 @@ class DvcIgnorePatterns(DvcIgnore):
                 # Unignored patterns are not combined with `|`.
                 group_name = None
             _regex, pattern_info = pattern_map[group_name]
-            if not ignore and not pattern_info.patterns.endswith("/**"):
-                # A directory match can reopen traversal at an ancestor. It
-                # does not re-include descendants still matched by an exclude.
-                if any(
-                    name.startswith("ps_d")
-                    and value
-                    and match.end(name) < len(candidate)
+            if inherited_negation is not None and ignore:
+                if pattern_info.patterns.endswith("/**"):
+                    return True, [pattern_info]
+                return False, [inherited_negation]
+            # Reopening an ancestor does not override a recursive exclude
+            # directly matching the descendant. Preserve other negation rules.
+            if (
+                not ignore
+                and not pattern_info.patterns.rstrip("/").endswith("/**")
+                and any(
+                    name.startswith("ps_d") and value and match.end(name) < len(candidate)
                     for name, value in groups.items()
-                ):
-                    continue
+                )
+            ):
+                if inherited_negation is None:
+                    inherited_negation = pattern_info
+                continue
+            if inherited_negation is not None:
+                return False, [inherited_negation]
             return ignore, [pattern_info]
+        if inherited_negation is not None:
+            return False, [inherited_negation]
         return False, []
 
     def _ignore(self, path: str, is_dir: bool) -> tuple[bool, list[PatternInfo]]:
