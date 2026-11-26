@@ -229,7 +229,9 @@ class DvcIgnorePatterns(DvcIgnore):
                 not ignore
                 and not pattern_info.patterns.rstrip("/").endswith("/**")
                 and any(
-                    name.startswith("ps_d") and value and match.end(name) < len(candidate)
+                    name.startswith("ps_d")
+                    and value
+                    and match.end(name) < len(candidate)
                     for name, value in groups.items()
                 )
             ):
